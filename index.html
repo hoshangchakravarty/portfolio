@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hoshang — Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --ink:#1f1f1f; --muted:#5d5b56;
+    --accent:#c8a96b;
+
+    /* glass variables that switch per theme */
+    --win-blur:22px;
+    --win-tint:rgba(255,255,255,.28);
+    --card-bg:rgba(255,255,255,.42);
+    --card-bd:rgba(0,0,0,.08);
+    --chip-bg:rgba(255,255,255,.65);
+
+    --drop:0 26px 80px rgba(0,0,0,.22);
+
+    /* mobile */
+    --toolbar-h:68px;
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); }
+  /* 1) lock main page scroll */
+  body{ overflow:hidden; }
+
+  /* BG video + veil */
+  #bgVideoWrap{ position:fixed; inset:0; z-index:0; pointer-events:none; background:#000; }
+  .bgVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .6s ease; filter:saturate(1.05) contrast(1.05); }
+  #themeFade{ position:fixed; inset:0; background:var(--bg); opacity:0; transition:opacity .35s ease; z-index:1; pointer-events:none; }
+
+  /* soft grain */
+  body::after{
+    content:""; position:fixed; inset:0; z-index:2; pointer-events:none; mix-blend-mode:soft-light; opacity:.22;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.03"/></svg>');
+  }
+
+  /* liquid glass welcome (blur 10) */
+  .welcome{
+    position:relative; border-radius:24px; width:min(980px,96vw); margin:8vh auto 0; overflow:hidden;
+    background:rgba(255,255,255,.18);
+    backdrop-filter:blur(10px) saturate(1.25) contrast(1.06) brightness(1.04);
+    -webkit-backdrop-filter:blur(10px) saturate(1.25) contrast(1.06) brightness(1.04);
+    box-shadow:inset 0 2px 8px rgba(255,255,255,.55), inset 0 -4px 10px rgba(0,0,0,.14), var(--drop);
+  }
+  .welcome .hd{ background:linear-gradient(180deg, rgba(20,30,48,.78), rgba(25,35,56,.62)); color:#fff; padding:12px 18px; font-size:15px; border-bottom:1px solid rgba(255,255,255,.45); }
+  .welcome .bd{ padding:64px 48px; text-align:center; }
+  .welcome h1{ font-size:56px; font-weight:800; margin:0 0 12px; }
+  .accent-chip{
+    display:inline-block; padding:.12em .5em .18em; border-radius:14px;
+    background:linear-gradient(180deg, color-mix(in oklab,var(--accent) 90%,white), color-mix(in oklab,var(--accent) 68%,black));
+    color:#fff; border:1px solid color-mix(in oklab,var(--accent) 55%,black);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.25), 0 4px 12px color-mix(in oklab, var(--accent) 35%, transparent);
+  }
+  .welcome .sub{ color:var(--muted); font-size:20px; margin-bottom:36px; }
+
+  /* buttons + toolbar discs */
+  .icon-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; max-width:860px; margin:0 auto; }
+  .icon-btn, .disc{
+    --bg1: color-mix(in oklab, var(--accent) 92%, white);
+    --bg2: color-mix(in oklab, var(--accent) 72%, black);
+    --bd : color-mix(in oklab, var(--accent) 55%, black);
+    --glow: color-mix(in oklab, var(--accent) 40%, transparent);
+    font-weight:800; letter-spacing:.5px; color:#fff;
+    background: linear-gradient(180deg, var(--bg1), var(--bg2));
+    border:1px solid var(--bd); border-radius:16px; padding:14px 18px; min-height:44px;
+    display:inline-flex; align-items:center; justify-content:center; gap:10px; user-select:none; text-decoration:none;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.25), 0 8px 18px var(--glow);
+    transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .icon-btn:hover,.disc:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+  .icon-btn:active,.disc:active{ transform:translateY(1px); }
+  .disc.is-active{ box-shadow:0 0 0 3px rgba(255,255,255,.7), 0 6px 18px var(--glow); }
+  .disc-bar{
+    position:relative; z-index:3; display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:center;
+    margin:20px auto; max-width:min(980px,96vw); padding:12px 16px; border-radius:999px;
+    background:rgba(255,255,255,.16);
+    backdrop-filter:blur(10px) saturate(1.2) contrast(1.05) brightness(1.03);
+    box-shadow:inset 0 2px 6px rgba(255,255,255,.45), inset 0 -3px 8px rgba(0,0,0,.12), 0 18px 48px rgba(0,0,0,.22);
+  }
+  .disc{ font-size:12px; padding:10px 14px; min-height:40px; }
+  .disc img{ height:18px; width:auto; border-radius:6px; }
+  #volume{ width:160px; } /* native slider */
+
+  /* windows */
+  .desk-window{
+    position:fixed; top:15vh; left:10vw; width:min(980px,92vw); max-height:70vh;
+    display:none; flex-direction:column; z-index:4; opacity:0; transform:scale(.94);
+    border-radius:20px; overflow:hidden; background:var(--win-tint);
+    backdrop-filter: blur(var(--win-blur)) saturate(1.2) contrast(1.05) brightness(1.03);
+    -webkit-backdrop-filter: blur(var(--win-blur)) saturate(1.2) contrast(1.05) brightness(1.03);
+    box-shadow: inset 0 1px 4px rgba(255,255,255,.45), inset 0 -3px 6px rgba(0,0,0,.25), 0 16px 42px rgba(0,0,0,.25);
+  }
+  .desk-window .bar{
+    background:linear-gradient(180deg, rgba(20,30,48,.78), rgba(25,35,56,.62));
+    color:#fff; padding:10px 12px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,.45);
+  }
+  .desk-window .close{
+    margin-left:auto; padding:4px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.35);
+    background:rgba(255,255,255,.12); transition: transform .12s ease, filter .12s ease, background .12s ease;
+  }
+  .desk-window .close:hover{ transform:scale(1.1); background:rgba(255,255,255,.18); }
+  .desk-window .close:active{ transform:scale(.9); filter:brightness(.95); }
+  .desk-window .body{ padding:22px 20px 30px; overflow:auto; }
+  .desk-window.show{ display:flex; animation:genieOpen .28s ease-out forwards; }
+  .desk-window.closing{ animation:genieClose .26s ease-in forwards; }
+  @keyframes genieOpen{ from{opacity:0; transform:scale(.7) translateY(-20px);} to{opacity:1; transform:scale(1) translateY(0);} }
+  @keyframes genieClose{ from{opacity:1;} to{opacity:0; transform:scale(.7) translateY(-20px);} }
+
+  /* About */
+  .about-wrap{ display:grid; grid-template-columns:140px 1fr; gap:18px; align-items:start; }
+  .avatar{ width:140px; height:140px; border-radius:18px; object-fit:cover; border:1px solid var(--card-bd); box-shadow:0 6px 16px rgba(0,0,0,.12); }
+  .about-title{ margin:0 0 6px; font-size:28px; font-weight:800; }
+  .about-lead{ margin:0 0 14px; font-size:18px; color:var(--muted); }
+  .chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 16px; }
+  .chip{ --dot: color-mix(in oklab, var(--accent) 70%, black); padding:8px 12px; border-radius:999px; background:var(--chip-bg); border:1px solid var(--card-bd); font-size:13px; display:inline-flex; align-items:center; gap:8px; backdrop-filter:blur(6px); }
+  .chip::before{ content:""; width:8px; height:8px; border-radius:50%; background:var(--dot); box-shadow:0 0 0 2px rgba(0,0,0,.06) inset; }
+
+  .ach-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .ach{ background:var(--card-bg); border:1px solid var(--card-bd); border-radius:14px; padding:12px 14px; box-shadow:0 8px 22px rgba(0,0,0,.10); color:var(--ink); }
+
+  /* Experience (2 & 3) */
+  .xp{ display:grid; grid-template-columns:64px 1fr; gap:14px; padding:14px; border-radius:16px; background:var(--card-bg); border:1px solid var(--card-bd); box-shadow:0 10px 24px rgba(0,0,0,.12); }
+  .xp + .xp{ margin-top:14px; }
+  .xp-logo{ width:64px; height:64px; border-radius:12px; object-fit:cover; border:1px solid var(--card-bd); background:#fff; }
+  .xp-h{ display:flex; flex-wrap:wrap; gap:8px 12px; align-items:baseline; font-weight:800; color:var(--ink); }
+  .xp-meta{ color:var(--muted); font-size:12px; }
+  .xp-list{ margin:6px 0 0 18px; }
+  .xp-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .tag{ font-size:12px; padding:6px 10px; border-radius:999px; background:var(--chip-bg); border:1px solid var(--card-bd); }
+
+  /* small thumbnail row like certificates */
+  .xp-shot{ margin-top:10px; display:flex; gap:10px; align-items:center; }
+  .xp-shot img{ width:220px; height:auto; border-radius:12px; object-fit:cover; border:1px solid var(--card-bd); }
+
+  /* Projects & Certs share the glass tokens */
+  .proj-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .proj{ border-radius:16px; overflow:hidden; background:var(--card-bg); border:1px solid var(--card-bd); box-shadow:0 8px 22px rgba(0,0,0,.10); transition:transform .12s ease, box-shadow .15s ease; color:var(--ink); }
+  .proj:hover{ transform:translateY(-2px); box-shadow:0 12px 28px rgba(0,0,0,.14); }
+  .proj img{ width:100%; height:160px; object-fit:cover; display:block; }
+  .proj .pbd{ padding:12px 14px; }
+  .proj .p-tags{ display:flex; flex-wrap:wrap; gap:8px; }
+
+  .cert-list{ display:grid; grid-template-columns:1fr; gap:14px; }
+  .cert-card{ padding:14px; border-radius:16px; background:var(--card-bg); border:1px solid var(--card-bd); box-shadow:0 10px 24px rgba(0,0,0,.12); color:var(--ink); }
+  .cert-head{ display:flex; gap:12px; align-items:center; }
+  .issuer-logo{ width:48px; height:48px; border-radius:10px; object-fit:cover; background:#fff; border:1px solid var(--card-bd); }
+  .cert-meta{ color:var(--muted); font-size:12px; }
+  .cert-shot{ margin-top:10px; }
+  .cert-shot img{ width:240px; max-width:100%; height:auto; border-radius:12px; border:1px solid var(--card-bd); }
+
+  /* Mobile: fixed toolbar + fullscreen slide-up windows (cover toolbar) */
+  @media (max-width:900px){
+    .disc-bar{
+      position:fixed; top:2px; left:50%; transform:translateX(-50%);
+      width:calc(100% - 16px); border-radius:18px; padding:8px;
+      backdrop-filter:blur(12px) saturate(1.2);
+    }
+    /* Push the welcome card a bit below the toolbar */
+    .welcome{ width:94%; margin-top:calc(var(--toolbar-h) + 40px); }
+
+    .icon-row{ grid-template-columns:1fr 1fr; }
+    .disc{ font-size:11px; padding:9px 12px; }
+    #volume{ width:120px; }
+
+    /* TRUE fullscreen sheet (covers toolbar) */
+    .desk-window{
+      left:0; right:0; width:auto; top:0; bottom:0; /* cover the toolbar */
+      max-height:none; border-radius:0; transform:none;
+      z-index:9999; /* ensure above toolbar */
+      height:100dvh;            /* lock to viewport height */
+      min-height:100dvh;        /* guard against browser UI jumps */
+    }
+    .desk-window .body{ padding:18px 16px 28px; }
+
+    /* slide from bottom / to bottom */
+    .desk-window.show{ animation:sheetUp .28s cubic-bezier(.22,.9,.2,1) forwards; }
+    .desk-window.closing{ animation:sheetDown .24s ease forwards; }
+
+    @keyframes sheetUp{ from{ opacity:0; transform:translateY(100%);} to{ opacity:1; transform:translateY(0);} }
+    @keyframes sheetDown{ from{ opacity:1; transform:translateY(0);} to{ opacity:0; transform:translateY(100%);} }
+
+    .about-wrap{ grid-template-columns:1fr; }
+    .avatar{ width:110px; height:110px; }
+    .ach-grid{ grid-template-columns:1fr; }
+    .proj-grid{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+  <!-- background videos -->
+  <div id="bgVideoWrap">
+    <video id="bgVideoA" class="bgVideo" muted playsinline preload="auto"></video>
+    <video id="bgVideoB" class="bgVideo" muted playsinline preload="auto"></video>
+  </div>
+  <div id="themeFade"></div>
+
+  <!-- hero -->
+  <section class="welcome">
+    <div class="hd">home</div>
+    <div class="bd">
+      <h1>hi! i’m <span class="accent-chip">hoshang</span></h1>
+      <p class="sub">founder, developer, researcher</p>
+
+      <div class="icon-row">
+        <a class="icon-btn" data-open="#aboutWin">👋 ABOUT</a>
+        <a class="icon-btn" data-open="#expWin">💼 EXPERIENCE</a>
+        <a class="icon-btn" data-open="#projectsWin">🧪 PROJECTS</a>
+        <a class="icon-btn" data-open="#certWin">📜 CERTIFICATIONS</a>
+        <a class="icon-btn" data-open="#springerWin">📖 SPRINGER RESEARCH</a>
+        <a class="icon-btn" data-open="#contactWin">✉️ CONTACT</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- toolbar -->
+  <div class="disc-bar" id="toolbar">
+    <label>vol <input id="volume" type="range" min="0" max="1" step="0.01" value="0.6"></label>
+    <button class="disc is-active" data-theme="default">DEFAULT</button>
+    <button class="disc" data-theme="liyue">
+      <img src="images/zhonglichibi.webp" alt="Liyue chibi"> LIYUE
+    </button>
+    <button class="disc" data-theme="childe">
+      <img src="images/childechibi1.webp" alt="Childe chibi"> CHILDE
+    </button>
+    <button class="disc" data-theme="inazuma">
+      <img src="images/raidenchibi.png" alt="Inazuma chibi"> INAZUMA
+    </button>
+    <button class="disc" id="discToggle">PAUSE/RESUME</button>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="desk-window" id="aboutWin">
+    <div class="bar" data-drag>About<div class="close" data-close>[x]</div></div>
+    <div class="body">
+      <div class="about-wrap">
+        <img class="avatar" src="images/face.webp" alt="Portrait of Hoshang" />
+        <div>
+          <h3 class="about-title">Hey! I’m Hoshang.</h3>
+          <p class="about-lead">
+            I’m an AI/ML and IoT tinkerer who loves coding, building, and occasionally modeling markets for fun. Outside of research, I switch gears to guitar, keyboard, or even a tin whistle. I like creating things that work, and I like... really really really like winning.
+          </p>
+          <div class="chip-row">
+            <span class="chip">IoT & Intelligent Systems</span>
+            <span class="chip">AI/ML</span>
+            <span class="chip">Finance</span>
+            <span class="chip">Web Devlopment</span>
+            <span class="chip">Game Devlopment</span>
+          </div>
+          <div class="ach-grid">
+            <div class="ach">📚 97% — ICSE (Class 10)</div>
+            <div class="ach">🧪 Springer-published Researcher — LNNS (Scopus)</div>
+            <div class="ach">🏆 SIH Internal Winner — Team GreenGrid</div>
+            <div class="ach">🎖️ School Captain</div>
+            <div class="ach">🚀 Founder — Marketing Agency</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section class="desk-window" id="expWin">
+    <div class="bar" data-drag>Experience<div class="close" data-close>[x]</div></div>
+    <div class="body">
+      <article class="xp">
+        <img class="xp-logo" src="images/quality.webp" alt="QualityKiosk logo" />
+        <div>
+          <div class="xp-h">
+            <div class="xp-role">Full-Stack Data Analytics Intern</div>
+            <div class="xp-org">· QualityKiosk Technologies</div>
+            <div class="xp-meta">Jun 2024 – Jul 2024 · Navi Mumbai</div>
+          </div>
+          <ul class="xp-list">
+            <li>Built a Data App that delivered <strong>21× ROI</strong> by reducing turnover costs and saving HR time.</li>
+            <li>Shipped dashboards for insight-driven decisions.</li>
+          </ul>
+          <div class="xp-tags">
+            <span class="tag">Streamlit</span><span class="tag">MySQL</span><span class="tag">Pandas</span><span class="tag">Altair</span><span class="tag">Argon2id</span>
+          </div>
+          <div class="xp-shot">
+            <img src="images/cert.jpg" alt="Internship certificate (thumb)">
+          </div>
+        </div>
+      </article>
+
+      <article class="xp">
+        <img class="xp-logo" src="images/tweet.jpg" alt="Tweetmailer logo" />
+        <div>
+          <div class="xp-h">
+            <div class="xp-role">Founder</div>
+            <div class="xp-org">· Tweetmailer (Marketing Agency)</div>
+            <div class="xp-meta">Feb 2023 – Mar 2024 · Mumbai</div>
+          </div>
+          <ul class="xp-list">
+            <li>Scaled revenue for US/UK clients via Direct Response & Value-Based Marketing.</li>
+            <li>Built persuasive funnels, copy, and landing pages.</li>
+            <li>Prototyped GenAI customer-service bots.</li>
+          </ul>
+          <div class="xp-tags">
+            <span class="tag">Copywriting</span><span class="tag">CRO</span><span class="tag">Paid Media</span><span class="tag">GenAI</span>
+          </div>
+          <div class="xp-shot">
+            <img src="images/bot.jpg" alt="GenAI bot (thumb)">
+          </div>
+        </div>
+      </article>
+
+      <article class="xp">
+        <img class="xp-logo" src="images/glitch.jpg" alt="Glitch! eSports logo" />
+        <div>
+          <div class="xp-h">
+            <div class="xp-role">Head of Promotions</div>
+            <div class="xp-org">· Glitch! eSports Society</div>
+            <div class="xp-meta">Sep 2022 – Mar 2024 · Jaipur</div>
+          </div>
+          <ul class="xp-list">
+            <li>Planned campus events with <strong>over 1,000</strong> footfall; drove sponsorships & promotions.</li>
+          </ul>
+          <div class="xp-tags">
+            <span class="tag">Leadership</span><span class="tag">Email Marketing</span><span class="tag">Sponsorships</span><span class="tag">Event Ops</span>
+          </div>
+          <div class="xp-shot">
+            <img src="images/show.jpg" alt="Event photo (thumb)">
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section class="desk-window" id="projectsWin">
+  <div class="bar" data-drag>Projects<div class="close" data-close>[x]</div></div>
+  <div class="body">
+    <div class="proj-grid">
+
+      <!-- Smart Power Grid -->
+      <article class="proj">
+        <img src="images/dashboard.png" alt="Smart Power Grid Dashboard Screenshot">
+        <div class="pbd">
+          <h4>Smart Power Grid Monitoring & Optimization</h4>
+          <p>
+            IoT + ML system built with <strong>Raspberry Pi Pico W</strong>, <strong>LoRa</strong>, and <strong>MQTT</strong> 
+            for renewable microgrid monitoring and predictive load forecasting.
+          </p>
+          <ul class="xp-list" style="margin:8px 0 12px 18px;">
+            <li>Real-time energy tracking with smart sensors</li>
+            <li>Load forecasting via ANN, SVR, Genetic Algorithms</li>
+            <li>Cloud dashboard for live visualization</li>
+            <li><strong>SIH 2025 Internal Winner — Team Solaris</strong></li>
+          </ul>
+          <div class="p-tags">
+            <span class="tag">IoT</span><span class="tag">LoRa</span><span class="tag">MQTT</span>
+            <span class="tag">ANN</span><span class="tag">Deep Learning</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Little Town -->
+      <article class="proj">
+        <img src="images/game.png" alt="Little Town pixel game screenshot">
+        <div class="pbd">
+          <h4>Little Town — GameMaker Studio 2</h4>
+          <p>
+            A cozy, pixel-art prototype exploring interactive storytelling and retro-style mechanics.
+          </p>
+          <div class="p-tags">
+            <span class="tag">GameMaker Studio 2</span><span class="tag">Pixel Art</span>
+            <span class="tag">UI/UX</span>
+          </div>
+          <p style="margin-top:10px;">
+            <a class="icon-btn" href="https://gx.games/games/ceqjrl/little-town-modified-/tracks/1a4be7dc-fba7-4e4d-bee0-86713a02ef2c/" target="_blank" rel="noopener">
+              ▶ PLAY
+            </a>
+          </p>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+  <!-- CERTIFICATIONS -->
+  <section class="desk-window" id="certWin">
+    <div class="bar" data-drag>Certifications<div class="close" data-close>[x]</div></div>
+    <div class="body">
+      <div class="cert-list">
+        <article class="cert-card">
+          <div class="cert-head">
+            <img class="issuer-logo" src="images/morgan.png" alt="J.P. Morgan logo">
+            <div>
+              <strong>Investment Banking Job Simulation</strong><br>
+              <span class="cert-meta">J.P. Morgan — Aug 2024 · Forage</span>
+            </div>
+          </div>
+          <ul class="xp-list">
+            <li>Identified M&A target, built DCF, produced a crisp 2-page client brief.</li>
+          </ul>
+          <div class="cert-shot">
+            <img src="images/morganc.png" alt="Investment Banking certificate">
+          </div>
+        </article>
+
+        <article class="cert-card">
+          <div class="cert-head">
+            <img class="issuer-logo" src="images/stanford.png" alt="DeepLearning.AI logo">
+            <div>
+              <strong>Improving Deep Neural Networks</strong><br>
+              <span class="cert-meta">DeepLearning.AI — Apr 2025</span>
+            </div>
+          </div>
+          <ul class="xp-list">
+            <li>Regularization, hyperparameter search, and training-loop ergonomics.</li>
+          </ul>
+          <div class="cert-shot">
+            <img src="images/stanfordc.png" alt="DeepLearning.AI certificate">
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- SPRINGER -->
+  <section class="desk-window" id="springerWin">
+    <div class="bar" data-drag>Springer Research<div class="close" data-close>[x]</div></div>
+    <div class="body">
+      <h3 style="margin-top:0">Soon available on Springer 📚</h3>
+      <div class="chip-row">
+        <span class="chip">LNNS</span><span class="chip">Scopus Indexed</span><span class="chip">Research</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="desk-window" id="contactWin">
+  <div class="bar" data-drag>Contact<div class="close" data-close>[x]</div></div>
+  <div class="body">
+
+    <!-- Hero image -->
+    <div style="margin-bottom:14px;">
+      <img src="images/contact.png" alt="Contact banner" style="width:25%; height:auto; border-radius:14px; border:1px solid var(--card-bd); display:block;">
+    </div>
+
+    <h3 style="margin:0 0 10px; font-size:24px;">Let’s build something 💪🏼</h3>
+    <p style="margin:0 0 18px; color:var(--muted);">
+      I’m open to internships, freelance work, and collaborations around Machine Learning, IoT Projects, Hackathons and Business Case Competitions. The fastest way to reach me is LinkedIn.
+    </p>
+
+    <!-- Availability / focus areas -->
+    <div class="chip-row" style="margin-bottom:18px;">
+      <span class="chip">Available · Part-time / Internship</span>
+      <span class="chip">ML/AI</span>
+      <span class="chip">IoT</span>
+      <span class="chip">Finance</span>
+    </div>
+
+    <!-- Primary actions (inline SVG icons) -->
+    <div class="cert-card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+      <a class="icon-btn" style="padding:10px 16px;" href="mailto:hoshangchakravarty@icloud.com">
+        <!-- Mail icon -->
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
+          <path fill="currentColor" d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 2v.01L12 13 4 6.01V6zM4 18V8l8 7 8-7v10z"/>
+        </svg>
+        <span>&nbsp;Email</span>
+      </a>
+
+      <a class="icon-btn" style="padding:10px 16px;" href="https://www.linkedin.com/in/hoshangc/" target="_blank" rel="noopener">
+        <!-- LinkedIn logo -->
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
+          <path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.22 8.98H4.7V24H.22zM8.54 8.98h4.28v2.05h.06c.6-1.14 2.07-2.35 4.27-2.35c4.56 0 5.4 3 5.4 6.9V24h-4.48v-6.63c0-1.58-.03-3.6-2.2-3.6c-2.2 0-2.53 1.72-2.53 3.49V24H8.54z"/>
+        </svg>
+        <span>&nbsp;LinkedIn</span>
+      </a>
+
+      <a class="icon-btn" style="padding:10px 16px;" href="https://github.com/hoshangchakravarty/" target="_blank" rel="noopener">
+        <!-- GitHub logo -->
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
+          <path fill="currentColor" d="M12 .5A11.5 11.5 0 0 0 .5 12c0 5.08 3.29 9.39 7.86 10.9c.58.11.79-.25.79-.56c0-.28-.01-1.02-.02-2c-3.2.7-3.88-1.54-3.88-1.54c-.53-1.36-1.3-1.72-1.3-1.72c-1.06-.73.08-.72.08-.72c1.17.08 1.79 1.2 1.79 1.2c1.04 1.79 2.74 1.28 3.41.98c.11-.75.41-1.28.75-1.57c-2.55-.29-5.23-1.28-5.23-5.69c0-1.26.45-2.29 1.19-3.1c-.12-.29-.52-1.46.11-3.04c0 0 .97-.31 3.18 1.18c.92-.26 1.9-.38 2.88-.38s1.96.13 2.88.38c2.21-1.49 3.18-1.18 3.18-1.18c.63 1.58.23 2.75.11 3.04c.74.81 1.19 1.84 1.19 3.1c0 4.42-2.68 5.4-5.24 5.68c.42.36.8 1.08.8 2.18c0 1.57-.02 2.83-.02 3.21c0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12A11.5 11.5 0 0 0 12 .5z"/>
+        </svg>
+        <span>&nbsp;GitHub</span>
+      </a>
+
+      <a class="icon-btn" style="padding:10px 16px;" href="files/resume.pdf" target="_blank" rel="noopener">
+        <!-- Resume/doc icon -->
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
+          <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16c0 1.11.89 2 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8v2H8m0 3h8v2H8m0-9h8v2H8"/>
+        </svg>
+        <span>&nbsp;Resume</span>
+      </a>
+    </div>
+
+    <!-- Context you like to receive -->
+    <div class="cert-card" style="margin-top:14px;">
+      <strong style="display:block; margin-bottom:8px;">What to include (helps me respond fast):</strong>
+      <ul class="xp-list" style="margin:0 0 0 18px;">
+        <li>1–2 lines on the goal and why now</li>
+        <li>Links or screenshots for context</li>
+        <li>Rough timeline and constraints</li>
+      </ul>
+    </div>
+
+    <!-- Quick facts / meta -->
+    <div class="cert-card" style="margin-top:14px;">
+      <div style="font-weight:800; margin-bottom:6px;">Quick facts</div>
+      <ul class="xp-list" style="margin:0 0 0 18px;">
+        <li>Location: Mumbai (IST)</li>
+        <li>Typical response: &lt; 24h</li>
+        <li>Preferred: async + concise briefs</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<script>
+/* ===== Themes (dynamic accents + assets) ===== */
+const themes={
+  default:{accent:'#c8a96b', bg:'#ffffff',       video:['images/default.mp4'],  audio:['sounds/default.mp3'], tint:'light'},
+  liyue  :{accent:'#d7a22a', bg:'#0b1f2a',       video:['images/liyue.mp4'],    audio:['sounds/rex.mp3'],     tint:'dark'},
+  childe :{accent:'#0b63c9', bg:'#061a2e',       video:['images/childe.mp4'],   audio:['sounds/childe.mp3'],  tint:'dark'},
+  inazuma:{accent:'#7a3ef0', bg:'#f7f6ff',       video:['images/inazuma.mp4'],  audio:['sounds/inazuma.mp3'], tint:'light'}
+};
+
+const root=document.documentElement, fade=document.getElementById('themeFade');
+const vA=document.getElementById('bgVideoA'), vB=document.getElementById('bgVideoB');
+[vA,vB].forEach(v=>{ v.muted=true; v.setAttribute('muted',''); }); // ensure muted
+
+const vol=document.getElementById('volume');
+
+let currentTheme='default', audioEl=null, audioPos={}, activeVid='A';
+
+/* Seamless video loop */
+[vA,vB].forEach(v=>{
+  v.loop=false;
+  v.addEventListener('timeupdate', ()=>{
+    if(v.duration && v.currentTime >= v.duration-0.05){ v.currentTime=0; v.play().catch(()=>{}); }
+  });
+});
+
+/* Video crossfade */
+function playVideoCrossfade(src){
+  const from=activeVid==='A'?vA:vB; const to=activeVid==='A'?vB:vA;
+  if(to.src!==src) to.src=src;
+  to.currentTime=0; to.play().catch(()=>{});
+  to.style.opacity='1'; from.style.opacity='0';
+  activeVid = activeVid==='A'?'B':'A';
+}
+function hideVideos(){ vA.style.opacity='0'; vB.style.opacity='0'; }
+
+/* Audio crossfade */
+function fadeAudio(el,to=0,ms=600,done=()=>{}){ if(!el){done();return;}
+  const from=el.volume, start=performance.now();
+  const step=t=>{ const k=Math.min(1,(t-start)/ms); el.volume=from+(to-from)*k; if(k<1) requestAnimationFrame(step); else{ el.volume=to; done(); } };
+  requestAnimationFrame(step);
+}
+function makeAudio(src,start=0,base=0.6){
+  const a=new Audio(src); a.loop=true; a.volume=0; a.currentTime=start||0;
+  const go=()=>{ a.play().catch(()=>{}); fadeAudio(a,base,800); };
+  a.addEventListener('canplaythrough',go,{once:true}); setTimeout(go,500); return a;
+}
+function crossfadeToThemeAudio(name,spec,volTarget){
+  const old=audioEl; if(old){ audioPos[currentTheme]=old.currentTime||0; fadeAudio(old,0,500,()=>old.pause()); }
+  audioEl = spec.audio? makeAudio(spec.audio[0], audioPos[name]||0, volTarget) : null;
+}
+
+/* Apply theme, swap glass tokens for readability */
+function applyTheme(name){
+  const t=themes[name]||themes.default;
+
+  if(t.tint === 'dark'){
+    root.style.setProperty('--ink','#ffffff');
+    root.style.setProperty('--muted','#cfcfcf');
+    root.style.setProperty('--win-tint','rgba(6,10,18,.34)');
+    root.style.setProperty('--card-bg','rgba(8,12,22,.42)');
+    root.style.setProperty('--card-bd','rgba(255,255,255,.12)');
+    root.style.setProperty('--chip-bg','rgba(255,255,255,.12)');
+  }else{
+    root.style.setProperty('--ink','#1f1f1f');
+    root.style.setProperty('--muted','#5d5b56');
+    root.style.setProperty('--win-tint','rgba(255,255,255,.28)');
+    root.style.setProperty('--card-bg','rgba(255,255,255,.42)');
+    root.style.setProperty('--card-bd','rgba(0,0,0,.08)');
+    root.style.setProperty('--chip-bg','rgba(255,255,255,.65)');
+  }
+
+  fade.style.background=t.bg; fade.style.opacity='1';
+  setTimeout(()=>{ root.style.setProperty('--accent',t.accent); fade.style.opacity='0'; },150);
+
+  if(t.video) playVideoCrossfade(t.video[0]); else hideVideos();
+  if(t.audio) crossfadeToThemeAudio(name,t,parseFloat(vol.value||'0.6')); else if(audioEl){ fadeAudio(audioEl,0,400,()=>audioEl.pause()); audioEl=null; }
+
+  currentTheme=name;
+  document.querySelectorAll('.disc').forEach(d=>d.classList.toggle('is-active', d.dataset.theme===name));
+}
+
+/* Disc controls */
+document.querySelectorAll('.disc[data-theme]').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.theme)));
+document.getElementById('discToggle').addEventListener('click',()=>{
+  if(!audioEl){ const t=themes[currentTheme]; if(t&&t.audio){ audioEl=makeAudio(t.audio[0], audioPos[currentTheme]||0, parseFloat(vol.value||'0.6')); } return; }
+  if(audioEl.paused){ audioEl.play().catch(()=>{}); fadeAudio(audioEl, parseFloat(vol.value||'0.6'), 600); }
+  else{ audioPos[currentTheme]=audioEl.currentTime||0; fadeAudio(audioEl,0,450,()=>audioEl.pause()); }
+});
+
+/* Volume: native look, just control gain */
+vol.addEventListener('input',()=>{ if(audioEl) audioEl.volume=parseFloat(vol.value); });
+
+/* Click SFX */
+function playClick(){ const s=new Audio('sounds/click.mp3'); s.volume=.45; s.play().catch(()=>{}); }
+document.addEventListener('click',e=>{ if(e.target.closest('a,button,.icon-btn,.disc,[data-close]')) playClick(); });
+
+/* Windows: open/close + drag */
+const OPENERS = document.querySelectorAll('[data-open]');
+const MODALS  = document.querySelectorAll('.desk-window');
+let z = 10;
+
+function isMobile(){ return window.matchMedia('(max-width:900px)').matches; }
+
+OPENERS.forEach(b => b.addEventListener('click', () => {
+  const win = document.querySelector(b.getAttribute('data-open')); if(!win) return;
+
+  // On mobile: clear inline positions so CSS fullscreen wins
+  if (isMobile()){
+    ['left','top','right','bottom','width','height','transform'].forEach(k => win.style[k] = '');
+  }
+
+  win.classList.remove('closing');
+  win.style.display='flex';
+  win.classList.remove('show'); void win.offsetWidth; // reflow
+  win.classList.add('show');
+  win.style.zIndex=(++z);
+}));
+
+MODALS.forEach(win=>{
+  win.querySelector('[data-close]')?.addEventListener('click',()=>{
+    win.classList.remove('show'); win.classList.add('closing');
+  });
+  win.addEventListener('animationend',ev=>{
+    if(ev.animationName==='genieClose'||ev.animationName==='sheetDown'){
+      win.classList.remove('closing'); win.style.display='none';
+    }
+  });
+  win.addEventListener('mousedown',()=>win.style.zIndex=(++z));
+
+  const bar=win.querySelector('[data-drag]'); if(!bar) return;
+  let sx=0,sy=0,drag=false;
+
+  const down=e=>{
+    if (isMobile()) return; // disable dragging on mobile (keeps fullscreen layout)
+    drag=true; const r=win.getBoundingClientRect(); const p=e.touches?e.touches[0]:e;
+    sx=p.clientX-r.left; sy=p.clientY-r.top;
+    document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+    document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up);
+  };
+  const move=e=>{
+    if(!drag) return; e.preventDefault?.(); const p=e.touches?e.touches[0]:e;
+    let x=p.clientX-sx,y=p.clientY-sy;
+    const maxX=innerWidth-win.offsetWidth-8, maxY=innerHeight-win.offsetHeight-8;
+    win.style.left=Math.max(8,Math.min(maxX,x))+'px';
+    win.style.top =Math.max(8,Math.min(maxY,y))+'px';
+  };
+  const up=()=>{
+    drag=false;
+    document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up);
+    document.removeEventListener('touchmove',move);  document.removeEventListener('touchend',up);
+  };
+
+  bar.addEventListener('mousedown',down);
+  bar.addEventListener('touchstart',down,{passive:true});
+});
+
+/* Init */
+applyTheme('default');
+
+/* Live toolbar height → keeps welcome card clear even if toolbar wraps or button state changes */
+const toolbar=document.getElementById('toolbar');
+function setToolbarH(){
+  const h = toolbar?.getBoundingClientRect().height || 68;
+  root.style.setProperty('--toolbar-h', `${Math.ceil(h)}px`);
+}
+setToolbarH();
+window.addEventListener('resize', setToolbarH);
+window.addEventListener('orientationchange', setToolbarH);
+if (document.fonts && document.fonts.ready) { document.fonts.ready.then(setToolbarH); }
+new ResizeObserver(setToolbarH).observe(toolbar);
+</script>
+</body>
+</html>
