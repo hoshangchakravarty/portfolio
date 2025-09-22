@@ -164,6 +164,24 @@
     .welcome{ width:94%; margin-top:calc(var(--toolbar-h) + 40px); }
 
     .icon-row{ grid-template-columns:1fr 1fr; }
+    /* MOBILE SCROLL + CENTERED BUTTONS */
+html, body{
+  height:auto;            /* stop the desktop 100% height lock */
+  min-height:100dvh;
+}
+body{
+  overflow:auto;          /* enable vertical scrolling on mobile */
+  overscroll-behavior-y: contain;
+}
+
+.icon-row{
+  justify-items:stretch;  /* keep buttons centered & equal width */
+  width:100%;
+}
+.icon-btn{
+  width:100%;
+  text-align:center;
+}
     .disc{ font-size:11px; padding:9px 12px; }
     #volume{ width:120px; }
 
