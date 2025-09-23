@@ -867,34 +867,60 @@ async function setVideoSrcWithBlob(videoEl, path){
   if (videoEl.src !== blobUrl) videoEl.src = blobUrl;
 }
 
+const BOOT_MAX_MS = 6000; // hard stop so loader never sticks
+
+function finishBoot(){
+  // hide loader quickly if it's still present
+  if (loader) {
+    loader.style.opacity = '0';
+    setTimeout(()=>loader.remove?.(), 350);
+  }
+  // bring up visuals
+  applyTheme('default');
+}
+
 async function firstBoot(){
-  // start warming: media + click SFX decode
+  // start preloads (non-blocking) + SFX decode
   warmAllThemeMedia().catch(()=>{});
   loadSfx().catch(()=>{});
 
-  // default BG video
-  const defVid = (themes.default.video && themes.default.video[0]) || null;
+  const defVid = themes.default.video?.[0] || null;
   if (defVid) {
     await setVideoSrcWithBlob(vA, defVid);
     vA.load();
+  } else {
+    // no default video configured → just finish
+    finishBoot();
+    return;
   }
 
-  // wait playable OR 2.5s timeout
-  const ready = new Promise(res=>{
-    const to = setTimeout(res, 2500);
-    vA.addEventListener('canplaythrough', ()=>{ clearTimeout(to); res(); }, {once:true});
+  // resolve on ANY early-playable signal OR on network weirdness OR timeout
+  const readySignal = new Promise(res=>{
+    const ok = ()=>res();
+    const failish = ()=>res(); // even on 'stalled'/'error', we proceed
+
+    vA.addEventListener('loadeddata', ok, {once:true});
+    vA.addEventListener('canplay', ok, {once:true});
+    vA.addEventListener('canplaythrough', ok, {once:true});
+
+    // if Safari stalls/suspends or errors, don't block boot
+    vA.addEventListener('stalled', failish, {once:true});
+    vA.addEventListener('suspend', failish, {once:true});
+    vA.addEventListener('error', failish, {once:true});
   });
-  await ready;
 
+  const hardTimeout = new Promise(res => setTimeout(res, BOOT_MAX_MS));
+  await Promise.race([readySignal, hardTimeout]);
+
+  // try show background (muted autoplay OK; if it fails we still continue)
   vA.style.opacity = '1';
-  try { await vA.play(); } catch(_){ /* muted autoplay only is fine */ }
+  try { await vA.play(); } catch(_) {}
 
-  // auto-resume audio within same tab if previously unlocked
+  // Same-tab refresh: auto-resume audio if previously unlocked
   try {
     if (sessionStorage.getItem('audioUnlocked') === '1'){
       const ACx = getAC();
       await ACx.resume();
-      // start current theme audio
       const t = themes[currentTheme];
       if (t?.audio && !audioEl) {
         const src = preload.blobs.get(t.audio[0]) || t.audio[0];
@@ -904,7 +930,8 @@ async function firstBoot(){
       // show hint only on platforms that block audio autoplay
       const blocks = /Mobi|Android|iPhone|iPad|Safari/i.test(navigator.userAgent);
       if (blocks && tapHint) tapHint.style.display = 'block';
-      // first gesture unlocks audio + remembers in this tab
+
+      // first gesture unlocks audio & stores flag for this tab
       const unlock = async () => {
         const ACx = getAC();
         await ACx.resume().catch(()=>{});
@@ -924,13 +951,10 @@ async function firstBoot(){
         document.addEventListener(ev, unlock, {once:true, capture:true});
       });
     }
-  } catch(_){}
+  } catch(_) {}
 
-  // hide loader
-  if (loader){ loader.style.opacity='0'; setTimeout(()=>loader.remove(), 350); }
-
-  // apply visuals after BG is up
-  applyTheme('default');
+  // finish boot even if any of the above had issues
+  finishBoot();
 }
 firstBoot();
 
