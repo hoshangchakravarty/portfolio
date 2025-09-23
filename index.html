@@ -217,6 +217,10 @@ body{
     .ach-grid{ grid-template-columns:1fr; }
     .proj-grid{ grid-template-columns:1fr; }
   }
+  @keyframes bob { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
+.bob  { animation:bob 1.6s ease-in-out infinite }
+.bob2 { animation:bob 1.8s ease-in-out infinite .1s }
+.bob3 { animation:bob 1.7s ease-in-out infinite .2s }
 /* Hand cursor on clickables */
 a, button, .icon-btn, .disc, [data-close], [data-open] { cursor: pointer; }
 /* Four-arrow/move on window titlebars */
@@ -240,12 +244,19 @@ body.dragging { cursor: move; }
 </head>
 <body>
   <div id="loader" style="position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#0a0f1a;color:#fff">
-  <div style="text-align:center;max-width:460px;padding:24px">
+  <div style="text-align:center;max-width:520px;padding:24px">
+    <div class="chibis" style="display:flex;gap:16px;justify-content:center;align-items:end;margin-bottom:16px;">
+      <img src="images/childechibi1.webp" alt="" class="bob"  style="height:54px;">
+      <img src="images/zhonglichibi.webp"  alt="" class="bob2" style="height:62px;">
+      <img src="images/raidenchibi.png"    alt="" class="bob3" style="height:56px;">
+    </div>
     <div style="font-weight:800;font-size:18px;margin-bottom:10px">Ready-ing your experience…</div>
-    <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.15);overflow:hidden">
+    <div style="height:10px;border-radius:999px;background:rgba(255,255,255,.15);overflow:hidden">
       <div id="loadbar" style="height:100%;width:0;background:#fff;transition:width .25s ease"></div>
     </div>
-    <div id="tapHint" style="opacity:.8;font-size:12px;margin-top:10px;display:none">Tap to enable sound</div>
+    <div id="tapHint" style="opacity:.8;font-size:12px;margin-top:12px;display:none">
+      Tap anywhere to enable music &amp; sounds
+    </div>
   </div>
 </div>
   <!-- background videos -->
@@ -618,6 +629,50 @@ async function warmAllThemeMedia(){
   await Promise.all(prioritized.map(fetchAsBlob));
 }
 
+/* ===== WebAudio unlock + SFX ===== */
+let AC=null, sfx={ click:null }, audioUnlocked=false;
+
+function getAC(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } return AC; }
+
+async function loadSfx(){
+  try{
+    const ab = await fetch('sounds/click.mp3', {cache:'force-cache'}).then(r=>r.arrayBuffer());
+    sfx.click = await getAC().decodeAudioData(ab);
+  }catch(_){}
+}
+
+function playClickSfx(){
+  if(!AC || AC.state!=='running' || !sfx.click) return;
+  const src = AC.createBufferSource();
+  src.buffer = sfx.click;
+  const g = AC.createGain(); g.gain.value = 0.45;
+  src.connect(g).connect(AC.destination);
+  src.start(0);
+}
+
+function unlockAudioAndStartTheme(){
+  getAC();
+  AC.resume().catch(()=>{});
+  audioUnlocked = true;
+  sessionStorage.setItem('audioUnlocked','1');
+
+  if(!audioEl){
+    const t = themes[currentTheme];
+    if(t?.audio){
+      const src = preload.blobs.get(t.audio[0]) || t.audio[0];
+      audioEl = makeAudio(src, audioPos[currentTheme]||0, parseFloat(vol.value||'0.6'));
+    }
+  }
+}
+
+/* bind early—first gesture unlocks */
+['pointerdown','keydown','touchstart'].forEach(ev=>{
+  document.addEventListener(ev, ()=>unlockAudioAndStartTheme(), {once:true, capture:true});
+});
+
+/* warm SFX right away */
+loadSfx();
+
 const root=document.documentElement, fade=document.getElementById('themeFade');
 const vA=document.getElementById('bgVideoA'), vB=document.getElementById('bgVideoB');
 [vA,vB].forEach(v=>{ v.muted=true; v.setAttribute('muted',''); }); // ensure muted
@@ -730,9 +785,10 @@ document.getElementById('discToggle').addEventListener('click',()=>{
 vol.addEventListener('input',()=>{ if(audioEl) audioEl.volume=parseFloat(vol.value); });
 
 /* Click SFX */
-function playClick(){ const s=new Audio('sounds/click.mp3'); s.volume=.45; s.play().catch(()=>{}); }
-document.addEventListener('click',e=>{ if(e.target.closest('a,button,.icon-btn,.disc,[data-close]')) playClick(); });
-
+/* Click SFX (WebAudio) */
+document.addEventListener('click', e=>{
+  if(e.target.closest('a,button,.icon-btn,.disc,[data-close]')) playClickSfx();
+});
 /* Windows: open/close + drag */
 const OPENERS = document.querySelectorAll('[data-open]');
 const MODALS  = document.querySelectorAll('.desk-window');
@@ -802,7 +858,7 @@ const up = () => {
   bar.addEventListener('touchstart',down,{passive:true});
 });
 
-/* ===== Loader + Autoplay handshake ===== */
+/* ===== Loader + first boot with tab-level memory ===== */
 const loader = document.getElementById('loader');
 const tapHint = document.getElementById('tapHint');
 
@@ -812,17 +868,18 @@ async function setVideoSrcWithBlob(videoEl, path){
 }
 
 async function firstBoot(){
-  // start warming (doesn't block UI)
+  // start warming: media + click SFX decode
   warmAllThemeMedia().catch(()=>{});
+  loadSfx().catch(()=>{});
 
-  // default video to visible player
+  // default BG video
   const defVid = (themes.default.video && themes.default.video[0]) || null;
   if (defVid) {
     await setVideoSrcWithBlob(vA, defVid);
     vA.load();
   }
 
-  // wait till default is playable OR 2.5s max
+  // wait playable OR 2.5s timeout
   const ready = new Promise(res=>{
     const to = setTimeout(res, 2500);
     vA.addEventListener('canplaythrough', ()=>{ clearTimeout(to); res(); }, {once:true});
@@ -830,35 +887,51 @@ async function firstBoot(){
   await ready;
 
   vA.style.opacity = '1';
-  try { await vA.play(); } catch(_) {/* muted autoplay only—OK */}
+  try { await vA.play(); } catch(_){ /* muted autoplay only is fine */ }
 
-  // subtle hint for mobile (audio needs gesture)
-  const needsGesture = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  if (needsGesture && tapHint) tapHint.style.display = 'block';
-
-  // fade out loader
-  if (loader){
-    loader.style.opacity = '0';
-    setTimeout(()=>loader.remove(), 350);
-  }
-
-  // now apply visual theme & be ready for audio unlock
-  applyTheme('default');
-
-  // first tap enables theme audio
-  const unlock = () => {
-    document.removeEventListener('click', unlock);
-    if (!audioEl) {
+  // auto-resume audio within same tab if previously unlocked
+  try {
+    if (sessionStorage.getItem('audioUnlocked') === '1'){
+      const ACx = getAC();
+      await ACx.resume();
+      // start current theme audio
       const t = themes[currentTheme];
-      if (t?.audio) {
+      if (t?.audio && !audioEl) {
         const src = preload.blobs.get(t.audio[0]) || t.audio[0];
         audioEl = makeAudio(src, audioPos[currentTheme]||0, parseFloat(vol.value||'0.6'));
       }
+    } else {
+      // show hint only on platforms that block audio autoplay
+      const blocks = /Mobi|Android|iPhone|iPad|Safari/i.test(navigator.userAgent);
+      if (blocks && tapHint) tapHint.style.display = 'block';
+      // first gesture unlocks audio + remembers in this tab
+      const unlock = async () => {
+        const ACx = getAC();
+        await ACx.resume().catch(()=>{});
+        sessionStorage.setItem('audioUnlocked','1');
+        if (!audioEl) {
+          const t = themes[currentTheme];
+          if (t?.audio) {
+            const src = preload.blobs.get(t.audio[0]) || t.audio[0];
+            audioEl = makeAudio(src, audioPos[currentTheme]||0, parseFloat(vol.value||'0.6'));
+          }
+        }
+        document.removeEventListener('pointerdown', unlock, true);
+        document.removeEventListener('keydown', unlock, true);
+        document.removeEventListener('touchstart', unlock, true);
+      };
+      ['pointerdown','keydown','touchstart'].forEach(ev=>{
+        document.addEventListener(ev, unlock, {once:true, capture:true});
+      });
     }
-  };
-  document.addEventListener('click', unlock, {once:true});
-}
+  } catch(_){}
 
+  // hide loader
+  if (loader){ loader.style.opacity='0'; setTimeout(()=>loader.remove(), 350); }
+
+  // apply visuals after BG is up
+  applyTheme('default');
+}
 firstBoot();
 
 /* Live toolbar height → keeps welcome card clear even if toolbar wraps or button state changes */
