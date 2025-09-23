@@ -217,9 +217,37 @@ body{
     .ach-grid{ grid-template-columns:1fr; }
     .proj-grid{ grid-template-columns:1fr; }
   }
+/* Hand cursor on clickables */
+a, button, .icon-btn, .disc, [data-close], [data-open] { cursor: pointer; }
+/* Four-arrow/move on window titlebars */
+[data-drag] { cursor: move; }
+/* While dragging keep move cursor to prevent flicker */
+body.dragging { cursor: move; }
+
 </style>
+<link rel="preconnect" href="/" crossorigin>
+<!-- Default theme: preload (critical) -->
+<link rel="preload" as="video" href="images/default.mp4" type="video/mp4" crossorigin>
+<link rel="preload" as="audio" href="sounds/default.mp3" type="audio/mpeg" crossorigin>
+
+<!-- Other themes: prefetch (warm cache without blocking) -->
+<link rel="prefetch" href="images/liyue.mp4" as="video" type="video/mp4" crossorigin>
+<link rel="prefetch" href="sounds/rex.mp3" as="audio" type="audio/mpeg" crossorigin>
+<link rel="prefetch" href="images/childe.mp4" as="video" type="video/mp4" crossorigin>
+<link rel="prefetch" href="sounds/childe.mp3" as="audio" type="audio/mpeg" crossorigin>
+<link rel="prefetch" href="images/inazuma.mp4" as="video" type="video/mp4" crossorigin>
+<link rel="prefetch" href="sounds/inazuma.mp3" as="audio" type="audio/mpeg" crossorigin>
 </head>
 <body>
+  <div id="loader" style="position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#0a0f1a;color:#fff">
+  <div style="text-align:center;max-width:460px;padding:24px">
+    <div style="font-weight:800;font-size:18px;margin-bottom:10px">Ready-ing your experience…</div>
+    <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.15);overflow:hidden">
+      <div id="loadbar" style="height:100%;width:0;background:#fff;transition:width .25s ease"></div>
+    </div>
+    <div id="tapHint" style="opacity:.8;font-size:12px;margin-top:10px;display:none">Tap to enable sound</div>
+  </div>
+</div>
   <!-- background videos -->
   <div id="bgVideoWrap">
     <video id="bgVideoA" class="bgVideo" muted playsinline preload="auto"></video>
@@ -552,6 +580,43 @@ const themes={
   childe :{accent:'#0b63c9', bg:'#061a2e',       video:['images/childe.mp4'],   audio:['sounds/childe.mp3'],  tint:'dark'},
   inazuma:{accent:'#7a3ef0', bg:'#f7f6ff',       video:['images/inazuma.mp4'],  audio:['sounds/inazuma.mp3'], tint:'light'}
 };
+/* ===== Preload Manager (in-memory + progressive loader) ===== */
+const preload = {
+  blobs: new Map(), // path -> objectURL
+  progress: 0, total: 0,
+};
+
+function fetchAsBlob(path){
+  return fetch(path, { cache: 'force-cache' })
+    .then(r => { if (!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
+    .then(b => {
+      const url = URL.createObjectURL(b);
+      preload.blobs.set(path, url);
+      preload.progress++;
+      const bar = document.getElementById('loadbar');
+      if (bar && preload.total) {
+        bar.style.width = Math.round(100 * preload.progress / preload.total) + '%';
+      }
+      return url;
+    })
+    .catch(()=> null);
+}
+
+async function warmAllThemeMedia(){
+  const paths = [];
+  Object.values(themes).forEach(t => {
+    (t.video||[]).forEach(p => paths.push(p));
+    (t.audio||[]).forEach(p => paths.push(p));
+  });
+  preload.total = paths.length;
+
+  const prioritized = [
+    ...(themes.default.video||[]),
+    ...(themes.default.audio||[]),
+    ...paths.filter(p => !((themes.default.video||[]).includes(p) || (themes.default.audio||[]).includes(p)))
+  ];
+  await Promise.all(prioritized.map(fetchAsBlob));
+}
 
 const root=document.documentElement, fade=document.getElementById('themeFade');
 const vA=document.getElementById('bgVideoA'), vB=document.getElementById('bgVideoB');
@@ -570,12 +635,34 @@ let currentTheme='default', audioEl=null, audioPos={}, activeVid='A';
 });
 
 /* Video crossfade */
-function playVideoCrossfade(src){
-  const from=activeVid==='A'?vA:vB; const to=activeVid==='A'?vB:vA;
-  if(to.src!==src) to.src=src;
-  to.currentTime=0; to.play().catch(()=>{});
-  to.style.opacity='1'; from.style.opacity='0';
-  activeVid = activeVid==='A'?'B':'A';
+function playVideoCrossfade(srcPath){
+  const src = preload.blobs.get(srcPath) || srcPath;
+  const from = activeVid==='A' ? vA : vB;
+  const to   = activeVid==='A' ? vB : vA;
+
+  if (to.src !== src) to.src = src;
+  to.currentTime = 0;
+
+  const go = () => {
+    to.play().catch(()=>{});
+    to.style.opacity = '1';
+    from.style.opacity = '0';
+    activeVid = (activeVid==='A' ? 'B' : 'A');
+  };
+
+  if (to.readyState >= 3) go();          // HAVE_FUTURE_DATA
+  else to.addEventListener('canplay', go, {once:true});
+}
+
+function crossfadeToThemeAudio(name, spec, volTarget){
+  const old = audioEl;
+  if (old){ audioPos[currentTheme] = old.currentTime||0; fadeAudio(old,0,500,()=>old.pause()); }
+
+  const srcPath = spec.audio?.[0];
+  if (!srcPath){ audioEl = null; return; }
+
+  const src = preload.blobs.get(srcPath) || srcPath;
+  audioEl = makeAudio(src, audioPos[name]||0, volTarget);
 }
 function hideVideos(){ vA.style.opacity='0'; vB.style.opacity='0'; }
 
@@ -590,10 +677,7 @@ function makeAudio(src,start=0,base=0.6){
   const go=()=>{ a.play().catch(()=>{}); fadeAudio(a,base,800); };
   a.addEventListener('canplaythrough',go,{once:true}); setTimeout(go,500); return a;
 }
-function crossfadeToThemeAudio(name,spec,volTarget){
-  const old=audioEl; if(old){ audioPos[currentTheme]=old.currentTime||0; fadeAudio(old,0,500,()=>old.pause()); }
-  audioEl = spec.audio? makeAudio(spec.audio[0], audioPos[name]||0, volTarget) : null;
-}
+
 
 /* Apply theme, swap glass tokens for readability */
 function applyTheme(name){
@@ -626,7 +710,16 @@ function applyTheme(name){
 }
 
 /* Disc controls */
-document.querySelectorAll('.disc[data-theme]').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.theme)));
+let themeLock = false;
+document.querySelectorAll('.disc[data-theme]').forEach(b=>b.addEventListener('click', async ()=>{
+  if (themeLock) return;
+  themeLock = true;
+  try {
+    applyTheme(b.dataset.theme);
+  } finally {
+    setTimeout(()=>themeLock=false, 250); // debounce ~1/4s
+  }
+}));
 document.getElementById('discToggle').addEventListener('click',()=>{
   if(!audioEl){ const t=themes[currentTheme]; if(t&&t.audio){ audioEl=makeAudio(t.audio[0], audioPos[currentTheme]||0, parseFloat(vol.value||'0.6')); } return; }
   if(audioEl.paused){ audioEl.play().catch(()=>{}); fadeAudio(audioEl, parseFloat(vol.value||'0.6'), 600); }
@@ -676,13 +769,19 @@ MODALS.forEach(win=>{
   const bar=win.querySelector('[data-drag]'); if(!bar) return;
   let sx=0,sy=0,drag=false;
 
-  const down=e=>{
-    if (isMobile()) return; // disable dragging on mobile (keeps fullscreen layout)
-    drag=true; const r=win.getBoundingClientRect(); const p=e.touches?e.touches[0]:e;
-    sx=p.clientX-r.left; sy=p.clientY-r.top;
-    document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
-    document.addEventListener('touchmove',move,{passive:false}); document.addEventListener('touchend',up);
-  };
+  const down = e => {
+  if (isMobile()) return; // disable dragging on mobile
+  drag = true;
+  document.body.classList.add('dragging');   // NEW
+  const r = win.getBoundingClientRect();
+  const p = e.touches ? e.touches[0] : e;
+  sx = p.clientX - r.left; 
+  sy = p.clientY - r.top;
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('touchend', up);
+};
   const move=e=>{
     if(!drag) return; e.preventDefault?.(); const p=e.touches?e.touches[0]:e;
     let x=p.clientX-sx,y=p.clientY-sy;
@@ -690,18 +789,77 @@ MODALS.forEach(win=>{
     win.style.left=Math.max(8,Math.min(maxX,x))+'px';
     win.style.top =Math.max(8,Math.min(maxY,y))+'px';
   };
-  const up=()=>{
-    drag=false;
-    document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up);
-    document.removeEventListener('touchmove',move);  document.removeEventListener('touchend',up);
-  };
+const up = () => {
+  drag = false;
+  document.body.classList.remove('dragging'); // NEW
+  document.removeEventListener('mousemove', move);
+  document.removeEventListener('mouseup', up);
+  document.removeEventListener('touchmove', move);
+  document.removeEventListener('touchend', up);
+};
 
   bar.addEventListener('mousedown',down);
   bar.addEventListener('touchstart',down,{passive:true});
 });
 
-/* Init */
-applyTheme('default');
+/* ===== Loader + Autoplay handshake ===== */
+const loader = document.getElementById('loader');
+const tapHint = document.getElementById('tapHint');
+
+async function setVideoSrcWithBlob(videoEl, path){
+  const blobUrl = preload.blobs.get(path) || path;
+  if (videoEl.src !== blobUrl) videoEl.src = blobUrl;
+}
+
+async function firstBoot(){
+  // start warming (doesn't block UI)
+  warmAllThemeMedia().catch(()=>{});
+
+  // default video to visible player
+  const defVid = (themes.default.video && themes.default.video[0]) || null;
+  if (defVid) {
+    await setVideoSrcWithBlob(vA, defVid);
+    vA.load();
+  }
+
+  // wait till default is playable OR 2.5s max
+  const ready = new Promise(res=>{
+    const to = setTimeout(res, 2500);
+    vA.addEventListener('canplaythrough', ()=>{ clearTimeout(to); res(); }, {once:true});
+  });
+  await ready;
+
+  vA.style.opacity = '1';
+  try { await vA.play(); } catch(_) {/* muted autoplay only—OK */}
+
+  // subtle hint for mobile (audio needs gesture)
+  const needsGesture = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  if (needsGesture && tapHint) tapHint.style.display = 'block';
+
+  // fade out loader
+  if (loader){
+    loader.style.opacity = '0';
+    setTimeout(()=>loader.remove(), 350);
+  }
+
+  // now apply visual theme & be ready for audio unlock
+  applyTheme('default');
+
+  // first tap enables theme audio
+  const unlock = () => {
+    document.removeEventListener('click', unlock);
+    if (!audioEl) {
+      const t = themes[currentTheme];
+      if (t?.audio) {
+        const src = preload.blobs.get(t.audio[0]) || t.audio[0];
+        audioEl = makeAudio(src, audioPos[currentTheme]||0, parseFloat(vol.value||'0.6'));
+      }
+    }
+  };
+  document.addEventListener('click', unlock, {once:true});
+}
+
+firstBoot();
 
 /* Live toolbar height → keeps welcome card clear even if toolbar wraps or button state changes */
 const toolbar=document.getElementById('toolbar');
@@ -714,6 +872,10 @@ window.addEventListener('resize', setToolbarH);
 window.addEventListener('orientationchange', setToolbarH);
 if (document.fonts && document.fonts.ready) { document.fonts.ready.then(setToolbarH); }
 new ResizeObserver(setToolbarH).observe(toolbar);
+/* ---- SW register (cache theme assets for near-instant switches) ---- */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
