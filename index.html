@@ -2,15 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Hoshang — Portfolio</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<meta id="themeColor" name="theme-color" content="#ffffff">
+
 <style>
   :root{
-    --bg:#ffffff; --ink:#1f1f1f; --muted:#5d5b56;
-    --accent:#c8a96b;
+    --bg:#ffffff; --ink:#1f1f1f; --muted:#5d5b56; --accent:#c8a96b;
 
-    /* glass variables that switch per theme */
+    /* glass tokens */
     --win-blur:22px;
     --win-tint:rgba(255,255,255,.28);
     --card-bg:rgba(255,255,255,.42);
@@ -18,34 +21,32 @@
     --chip-bg:rgba(255,255,255,.65);
 
     --drop:0 26px 80px rgba(0,0,0,.22);
-
-    /* mobile */
-    --toolbar-h:68px;
+    --toolbar-h:68px; /* live-updated */
   }
 
   *,*::before,*::after{ box-sizing:border-box; }
-  html,body{ height:100%; margin:0; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); }
-  /* 1) lock main page scroll */
-  body{ overflow:hidden; }
+  html,body{ margin:0; height:100%; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); background:var(--bg); }
+  body{ overflow:hidden; min-height:100svh; }
 
-  /* BG video + veil */
+  /* Background video + veil */
   #bgVideoWrap{ position:fixed; inset:0; z-index:0; pointer-events:none; background:#000; }
   .bgVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .6s ease; filter:saturate(1.05) contrast(1.05); }
   #themeFade{ position:fixed; inset:0; background:var(--bg); opacity:0; transition:opacity .35s ease; z-index:1; pointer-events:none; }
 
-  /* soft grain */
+  /* Soft grain */
   body::after{
     content:""; position:fixed; inset:0; z-index:2; pointer-events:none; mix-blend-mode:soft-light; opacity:.22;
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.03"/></svg>');
   }
 
-  /* liquid glass welcome (blur 10) */
+  /* Welcome card */
   .welcome{
     position:relative; border-radius:24px; width:min(980px,96vw); margin:8vh auto 0; overflow:hidden;
     background:rgba(255,255,255,.18);
     backdrop-filter:blur(10px) saturate(1.25) contrast(1.06) brightness(1.04);
     -webkit-backdrop-filter:blur(10px) saturate(1.25) contrast(1.06) brightness(1.04);
     box-shadow:inset 0 2px 8px rgba(255,255,255,.55), inset 0 -4px 10px rgba(0,0,0,.14), var(--drop);
+    z-index:3;
   }
   .welcome .hd{ background:linear-gradient(180deg, rgba(20,30,48,.78), rgba(25,35,56,.62)); color:#fff; padding:12px 18px; font-size:15px; border-bottom:1px solid rgba(255,255,255,.45); }
   .welcome .bd{ padding:64px 48px; text-align:center; }
@@ -58,7 +59,7 @@
   }
   .welcome .sub{ color:var(--muted); font-size:20px; margin-bottom:36px; }
 
-  /* buttons + toolbar discs */
+  /* Buttons + toolbar discs */
   .icon-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; max-width:860px; margin:0 auto; }
   .icon-btn, .disc{
     --bg1: color-mix(in oklab, var(--accent) 92%, white);
@@ -76,7 +77,7 @@
   .icon-btn:active,.disc:active{ transform:translateY(1px); }
   .disc.is-active{ box-shadow:0 0 0 3px rgba(255,255,255,.7), 0 6px 18px var(--glow); }
   .disc-bar{
-    position:relative; z-index:3; display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:center;
+    position:relative; z-index:5; display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:center;
     margin:20px auto; max-width:min(980px,96vw); padding:12px 16px; border-radius:999px;
     background:rgba(255,255,255,.16);
     backdrop-filter:blur(10px) saturate(1.2) contrast(1.05) brightness(1.03);
@@ -84,9 +85,9 @@
   }
   .disc{ font-size:12px; padding:10px 14px; min-height:40px; }
   .disc img{ height:18px; width:auto; border-radius:6px; }
-  #volume{ width:160px; } /* native slider */
+  #volume{ width:160px; }
 
-  /* windows */
+  /* Windows */
   .desk-window{
     position:fixed; top:15vh; left:10vw; width:min(980px,92vw); max-height:70vh;
     display:none; flex-direction:column; z-index:4; opacity:0; transform:scale(.94);
@@ -98,10 +99,11 @@
   .desk-window .bar{
     background:linear-gradient(180deg, rgba(20,30,48,.78), rgba(25,35,56,.62));
     color:#fff; padding:10px 12px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,.45);
+    cursor: move;
   }
   .desk-window .close{
     margin-left:auto; padding:4px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.35);
-    background:rgba(255,255,255,.12); transition: transform .12s ease, filter .12s ease, background .12s ease;
+    background:rgba(255,255,255,.12); transition: transform .12s ease, filter .12s ease, background .12s ease; cursor:pointer;
   }
   .desk-window .close:hover{ transform:scale(1.1); background:rgba(255,255,255,.18); }
   .desk-window .close:active{ transform:scale(.9); filter:brightness(.95); }
@@ -111,7 +113,7 @@
   @keyframes genieOpen{ from{opacity:0; transform:scale(.7) translateY(-20px);} to{opacity:1; transform:scale(1) translateY(0);} }
   @keyframes genieClose{ from{opacity:1;} to{opacity:0; transform:scale(.7) translateY(-20px);} }
 
-  /* About */
+  /* About etc. */
   .about-wrap{ display:grid; grid-template-columns:140px 1fr; gap:18px; align-items:start; }
   .avatar{ width:140px; height:140px; border-radius:18px; object-fit:cover; border:1px solid var(--card-bd); box-shadow:0 6px 16px rgba(0,0,0,.12); }
   .about-title{ margin:0 0 6px; font-size:28px; font-weight:800; }
@@ -123,7 +125,6 @@
   .ach-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .ach{ background:var(--card-bg); border:1px solid var(--card-bd); border-radius:14px; padding:12px 14px; box-shadow:0 8px 22px rgba(0,0,0,.10); color:var(--ink); }
 
-  /* Experience (2 & 3) */
   .xp{ display:grid; grid-template-columns:64px 1fr; gap:14px; padding:14px; border-radius:16px; background:var(--card-bg); border:1px solid var(--card-bd); box-shadow:0 10px 24px rgba(0,0,0,.12); }
   .xp + .xp{ margin-top:14px; }
   .xp-logo{ width:64px; height:64px; border-radius:12px; object-fit:cover; border:1px solid var(--card-bd); background:#fff; }
@@ -133,11 +134,9 @@
   .xp-tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
   .tag{ font-size:12px; padding:6px 10px; border-radius:999px; background:var(--chip-bg); border:1px solid var(--card-bd); }
 
-  /* small thumbnail row like certificates */
   .xp-shot{ margin-top:10px; display:flex; gap:10px; align-items:center; }
   .xp-shot img{ width:220px; height:auto; border-radius:12px; object-fit:cover; border:1px solid var(--card-bd); }
 
-  /* Projects & Certs share the glass tokens */
   .proj-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
   .proj{ border-radius:16px; overflow:hidden; background:var(--card-bg); border:1px solid var(--card-bd); box-shadow:0 8px 22px rgba(0,0,0,.10); transition:transform .12s ease, box-shadow .15s ease; color:var(--ink); }
   .proj:hover{ transform:translateY(-2px); box-shadow:0 12px 28px rgba(0,0,0,.14); }
@@ -153,267 +152,259 @@
   .cert-shot{ margin-top:10px; }
   .cert-shot img{ width:240px; max-width:100%; height:auto; border-radius:12px; border:1px solid var(--card-bd); }
 
-  /* Mobile: fixed toolbar + fullscreen slide-up windows (cover toolbar) */
+  /* Mobile tweaks */
   @media (max-width:900px){
     .disc-bar{
       position:fixed; top:2px; left:50%; transform:translateX(-50%);
       width:calc(100% - 16px); border-radius:18px; padding:8px;
       backdrop-filter:blur(12px) saturate(1.2);
     }
-    /* Push the welcome card a bit below the toolbar */
     .welcome{ width:94%; margin-top:calc(var(--toolbar-h) + 40px); }
     .welcome .bd{ padding:40px 16px; text-align:center; }
+    .icon-row{ grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
+    .icon-btn{ width:100%; text-align:center; }
 
-    .icon-row{
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  justify-items: stretch;
-  width: 100%;
-  gap: 14px;
-}
-.icon-btn{
-  width: 100%;
-  text-align: center;
-}
-    /* MOBILE SCROLL + CENTERED BUTTONS */
-html, body{
-  height:auto;            /* stop the desktop 100% height lock */
-  min-height:100dvh;
-}
-body{
-  overflow:auto;          /* enable vertical scrolling on mobile */
-  overscroll-behavior-y: contain;
-}
-
-.icon-row{
-  justify-items:stretch;  /* keep buttons centered & equal width */
-  width:100%;
-}
-.icon-btn{
-  width:100%;
-  text-align:center;
-}
+    html, body{ height:auto; min-height:100svh; }
+    body{ overflow:auto; overscroll-behavior-y:contain; }
     .disc{ font-size:11px; padding:9px 12px; }
     #volume{ width:120px; }
 
-    /* TRUE fullscreen sheet (covers toolbar) */
     .desk-window{
-      left:0; right:0; width:auto; top:0; bottom:0; /* cover the toolbar */
-      max-height:none; border-radius:0; transform:none;
-      z-index:9999; /* ensure above toolbar */
-      height:100dvh;            /* lock to viewport height */
-      min-height:100dvh;        /* guard against browser UI jumps */
+      left:0; right:0; width:auto; top:0; bottom:0;
+      max-height:none; border-radius:0; transform:none; z-index:9999;
+      height:100svh; min-height:100svh;
     }
     .desk-window .body{ padding:18px 16px 28px; }
-
-    /* slide from bottom / to bottom */
     .desk-window.show{ animation:sheetUp .28s cubic-bezier(.22,.9,.2,1) forwards; }
     .desk-window.closing{ animation:sheetDown .24s ease forwards; }
-
     @keyframes sheetUp{ from{ opacity:0; transform:translateY(100%);} to{ opacity:1; transform:translateY(0);} }
     @keyframes sheetDown{ from{ opacity:1; transform:translateY(0);} to{ opacity:0; transform:translateY(100%);} }
-
     .about-wrap{ grid-template-columns:1fr; }
     .avatar{ width:110px; height:110px; }
     .ach-grid{ grid-template-columns:1fr; }
     .proj-grid{ grid-template-columns:1fr; }
   }
+
+  /* Bobbing chibis + loader */
   @keyframes bob { 0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)} }
-.bob  { animation:bob 1.6s ease-in-out infinite }
-.bob2 { animation:bob 1.8s ease-in-out infinite .1s }
-.bob3 { animation:bob 1.7s ease-in-out infinite .2s }
-/* Hand cursor on clickables */
-a, button, .icon-btn, .disc, [data-close], [data-open] { cursor: pointer; }
-/* Four-arrow/move on window titlebars */
-[data-drag] { cursor: move; }
-/* While dragging keep move cursor to prevent flicker */
-body.dragging { cursor: move; }
+  .bob  { animation:bob 1.6s ease-in-out infinite }
+  .bob2 { animation:bob 1.8s ease-in-out infinite .1s }
+  .bob3 { animation:bob 1.7s ease-in-out infinite .2s }
 
+  #loader{
+    position:fixed; inset:0; z-index:99999; display:grid; place-items:center;
+    background:#0a0f1a; color:#fff;
+  }
+  #loaderCard{ text-align:center; max-width:520px; padding:24px; }
+  #loadbarWrap{ height:10px; border-radius:999px; background:rgba(255,255,255,.15); overflow:hidden; }
+  #loadbar{ height:100%; width:0; background:#fff; transition:width .25s ease; }
+
+  /* Glass tooltip that points to the pause/play button */
+  .glass-tip{
+    position:fixed; z-index:100000; max-width:min(70vw,320px);
+    background:rgba(255,255,255,.18);
+    backdrop-filter:blur(10px) saturate(1.2) contrast(1.06) brightness(1.04);
+    -webkit-backdrop-filter:blur(10px) saturate(1.2) contrast(1.06) brightness(1.04);
+    color:#fff; border:1px solid rgba(255,255,255,.35);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35), inset 0 -1px 0 rgba(0,0,0,.25), 0 10px 24px rgba(0,0,0,.28);
+    border-radius:14px; padding:10px 12px; font-size:13px; line-height:1.35;
+    opacity:0; transform:scale(.95); pointer-events:none; transition:opacity .18s ease, transform .18s ease;
+  }
+  .glass-tip.show{ opacity:1; transform:scale(1); }
+  /* Arrow variants */
+  .glass-tip::after{
+    content:""; position:absolute; width:12px; height:12px; background:inherit; border:inherit;
+    transform:rotate(45deg);
+  }
+  .tip-top::after   { left:var(--ax,50%); bottom:-6px; transform:translateX(-50%) rotate(45deg); border-top:none; border-left:none; }
+  .tip-bottom::after{ left:var(--ax,50%); top:-6px;    transform:translateX(-50%) rotate(45deg); border-bottom:none; border-right:none; }
+  .tip-left::after  { top:var(--ay,50%);  right:-6px;  transform:translateY(-50%) rotate(45deg); border-left:none; border-bottom:none; }
+  .tip-right::after { top:var(--ay,50%);  left:-6px;   transform:translateY(-50%) rotate(45deg); border-right:none; border-top:none; }
+  .hidden{ display:none !important; }
+
+  /* Cursors */
+  a, button, .icon-btn, .disc, [data-close], [data-open] { cursor:pointer; }
+  body.dragging { cursor: move; }
 </style>
-<link rel="preconnect" href="/" crossorigin>
-<!-- Default theme: preload (critical) -->
-<link rel="preload" as="video" href="images/default.mp4" type="video/mp4" crossorigin>
-<link rel="preload" as="audio" href="sounds/default.mp3" type="audio/mpeg" crossorigin>
-
-<!-- Other themes: prefetch (warm cache without blocking) -->
-<link rel="prefetch" href="images/liyue.mp4" as="video" type="video/mp4" crossorigin>
-<link rel="prefetch" href="sounds/rex.mp3" as="audio" type="audio/mpeg" crossorigin>
-<link rel="prefetch" href="images/childe.mp4" as="video" type="video/mp4" crossorigin>
-<link rel="prefetch" href="sounds/childe.mp3" as="audio" type="audio/mpeg" crossorigin>
-<link rel="prefetch" href="images/inazuma.mp4" as="video" type="video/mp4" crossorigin>
-<link rel="prefetch" href="sounds/inazuma.mp3" as="audio" type="audio/mpeg" crossorigin>
 </head>
 <body>
-  <div id="loader" style="position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#0a0f1a;color:#fff">
-  <div style="text-align:center;max-width:520px;padding:24px">
+
+<!-- Loader (no preloading, just shows until assets are ready or 5s timeout) -->
+<div id="loader">
+  <div id="loaderCard">
     <div class="chibis" style="display:flex;gap:16px;justify-content:center;align-items:end;margin-bottom:16px;">
       <img src="images/childechibi1.webp" alt="" class="bob"  style="height:54px;">
       <img src="images/zhonglichibi.webp"  alt="" class="bob2" style="height:62px;">
       <img src="images/raidenchibi.png"    alt="" class="bob3" style="height:56px;">
     </div>
     <div style="font-weight:800;font-size:18px;margin-bottom:10px">Ready-ing your experience…</div>
-    <div style="height:10px;border-radius:999px;background:rgba(255,255,255,.15);overflow:hidden">
-      <div id="loadbar" style="height:100%;width:0;background:#fff;transition:width .25s ease"></div>
-    </div>
-    <div id="tapHint" style="opacity:.8;font-size:12px;margin-top:12px;display:none">
-      Tap anywhere to enable music &amp; sounds
-    </div>
+    <div id="loadbarWrap"><div id="loadbar"></div></div>
   </div>
 </div>
-  <!-- background videos -->
-  <div id="bgVideoWrap">
-    <video id="bgVideoA" class="bgVideo" muted playsinline preload="auto"></video>
-    <video id="bgVideoB" class="bgVideo" muted playsinline preload="auto"></video>
+
+<!-- Tooltip that will point at the Pause/Play button -->
+<div id="audioNudge" class="glass-tip hidden tip-top" role="status">
+  Music is off by default on some browsers.<br>
+  <strong>Tap&nbsp;<span aria-hidden="true">▶️</span>&nbsp;Play</strong> to start!
+</div>
+
+<!-- background videos -->
+<div id="bgVideoWrap">
+  <video id="bgVideoA" class="bgVideo" muted playsinline preload="metadata"></video>
+  <video id="bgVideoB" class="bgVideo" muted playsinline preload="metadata"></video>
+</div>
+<div id="themeFade"></div>
+
+<!-- hero -->
+<section class="welcome">
+  <div class="hd">home</div>
+  <div class="bd">
+    <h1>hi! i’m <span class="accent-chip">hoshang</span></h1>
+    <p class="sub">founder, developer, researcher</p>
+
+    <div class="icon-row">
+      <a class="icon-btn" data-open="#aboutWin">👋 ABOUT</a>
+      <a class="icon-btn" data-open="#expWin">💼 EXPERIENCE</a>
+      <a class="icon-btn" data-open="#projectsWin">🧪 PROJECTS</a>
+      <a class="icon-btn" data-open="#certWin">📜 CERTIFICATIONS</a>
+      <a class="icon-btn" data-open="#springerWin">📖 SPRINGER RESEARCH</a>
+      <a class="icon-btn" data-open="#contactWin">✉️ CONTACT</a>
+    </div>
   </div>
-  <div id="themeFade"></div>
+</section>
 
-  <!-- hero -->
-  <section class="welcome">
-    <div class="hd">home</div>
-    <div class="bd">
-      <h1>hi! i’m <span class="accent-chip">hoshang</span></h1>
-      <p class="sub">founder, developer, researcher</p>
+<!-- toolbar -->
+<div class="disc-bar" id="toolbar">
+  <label>vol <input id="volume" type="range" min="0" max="1" step="0.01" value="0.6"></label>
 
-      <div class="icon-row">
-        <a class="icon-btn" data-open="#aboutWin">👋 ABOUT</a>
-        <a class="icon-btn" data-open="#expWin">💼 EXPERIENCE</a>
-        <a class="icon-btn" data-open="#projectsWin">🧪 PROJECTS</a>
-        <a class="icon-btn" data-open="#certWin">📜 CERTIFICATIONS</a>
-        <a class="icon-btn" data-open="#springerWin">📖 SPRINGER RESEARCH</a>
-        <a class="icon-btn" data-open="#contactWin">✉️ CONTACT</a>
+  <button class="disc is-active" data-theme="default">DEFAULT</button>
+  <button class="disc" data-theme="liyue">
+    <img src="images/zhonglichibi.webp" alt="Liyue chibi"> LIYUE
+  </button>
+  <button class="disc" data-theme="childe">
+    <img src="images/childechibi1.webp" alt="Childe chibi"> CHILDE
+  </button>
+  <button class="disc" data-theme="inazuma">
+    <img src="images/raidenchibi.png" alt="Inazuma chibi"> INAZUMA
+  </button>
+
+  <!-- Pause/Play button (reflects state; emoji updates via JS) -->
+  <button class="disc" id="discToggle">
+    <span id="discIcon" aria-hidden="true">⏸️</span>
+    <span id="discLabel">PAUSE</span>
+  </button>
+</div>
+
+<!-- ABOUT -->
+<section class="desk-window" id="aboutWin">
+  <div class="bar" data-drag>About<div class="close" data-close>[x]</div></div>
+  <div class="body">
+    <div class="about-wrap">
+      <img class="avatar" src="images/face.webp" alt="Portrait of Hoshang" />
+      <div>
+        <h3 class="about-title">Hey! I’m Hoshang.</h3>
+        <p class="about-lead">
+          I’m an AI/ML and IoT tinkerer who loves coding, building, and occasionally modeling markets for fun. Outside of research, I switch gears to guitar, keyboard, or even a tin whistle. I like creating things that work, and I like... really really really like winning.
+        </p>
+        <div class="chip-row">
+          <span class="chip">IoT & Intelligent Systems</span>
+          <span class="chip">AI/ML</span>
+          <span class="chip">Finance</span>
+          <span class="chip">Web Devlopment</span>
+          <span class="chip">Game Devlopment</span>
+        </div>
+        <div class="ach-grid">
+          <div class="ach">📚 97% — ICSE (Class 10)</div>
+          <div class="ach">🧪 Springer-published Researcher — LNNS (Scopus)</div>
+          <div class="ach">🏆 SIH Internal Winner — Team GreenGrid</div>
+          <div class="ach">🎖️ School Captain</div>
+          <div class="ach">🚀 Founder — Marketing Agency</div>
+        </div>
       </div>
     </div>
-  </section>
-
-  <!-- toolbar -->
-  <div class="disc-bar" id="toolbar">
-    <label>vol <input id="volume" type="range" min="0" max="1" step="0.01" value="0.6"></label>
-    <button class="disc is-active" data-theme="default">DEFAULT</button>
-    <button class="disc" data-theme="liyue">
-      <img src="images/zhonglichibi.webp" alt="Liyue chibi"> LIYUE
-    </button>
-    <button class="disc" data-theme="childe">
-      <img src="images/childechibi1.webp" alt="Childe chibi"> CHILDE
-    </button>
-    <button class="disc" data-theme="inazuma">
-      <img src="images/raidenchibi.png" alt="Inazuma chibi"> INAZUMA
-    </button>
-    <button class="disc" id="discToggle">PAUSE/RESUME</button>
   </div>
+</section>
 
-  <!-- ABOUT -->
-  <section class="desk-window" id="aboutWin">
-    <div class="bar" data-drag>About<div class="close" data-close>[x]</div></div>
-    <div class="body">
-      <div class="about-wrap">
-        <img class="avatar" src="images/face.webp" alt="Portrait of Hoshang" />
-        <div>
-          <h3 class="about-title">Hey! I’m Hoshang.</h3>
-          <p class="about-lead">
-            I’m an AI/ML and IoT tinkerer who loves coding, building, and occasionally modeling markets for fun. Outside of research, I switch gears to guitar, keyboard, or even a tin whistle. I like creating things that work, and I like... really really really like winning.
-          </p>
-          <div class="chip-row">
-            <span class="chip">IoT & Intelligent Systems</span>
-            <span class="chip">AI/ML</span>
-            <span class="chip">Finance</span>
-            <span class="chip">Web Devlopment</span>
-            <span class="chip">Game Devlopment</span>
-          </div>
-          <div class="ach-grid">
-            <div class="ach">📚 97% — ICSE (Class 10)</div>
-            <div class="ach">🧪 Springer-published Researcher — LNNS (Scopus)</div>
-            <div class="ach">🏆 SIH Internal Winner — Team GreenGrid</div>
-            <div class="ach">🎖️ School Captain</div>
-            <div class="ach">🚀 Founder — Marketing Agency</div>
-          </div>
+<!-- EXPERIENCE -->
+<section class="desk-window" id="expWin">
+  <div class="bar" data-drag>Experience<div class="close" data-close>[x]</div></div>
+  <div class="body">
+    <article class="xp">
+      <img class="xp-logo" src="images/quality.webp" alt="QualityKiosk logo" />
+      <div>
+        <div class="xp-h">
+          <div class="xp-role">Full-Stack Data Analytics Intern</div>
+          <div class="xp-org">· QualityKiosk Technologies</div>
+          <div class="xp-meta">Jun 2024 – Jul 2024 · Navi Mumbai</div>
+        </div>
+        <ul class="xp-list">
+          <li>Built a Data App that delivered <strong>21× ROI</strong> by reducing turnover costs and saving HR time.</li>
+          <li>Shipped dashboards for insight-driven decisions.</li>
+        </ul>
+        <div class="xp-tags">
+          <span class="tag">Streamlit</span><span class="tag">MySQL</span><span class="tag">Pandas</span><span class="tag">Altair</span><span class="tag">Argon2id</span>
+        </div>
+        <div class="xp-shot">
+          <img src="images/cert.jpg" alt="Internship certificate (thumb)">
         </div>
       </div>
-    </div>
-  </section>
+    </article>
 
-  <!-- EXPERIENCE -->
-  <section class="desk-window" id="expWin">
-    <div class="bar" data-drag>Experience<div class="close" data-close>[x]</div></div>
-    <div class="body">
-      <article class="xp">
-        <img class="xp-logo" src="images/quality.webp" alt="QualityKiosk logo" />
-        <div>
-          <div class="xp-h">
-            <div class="xp-role">Full-Stack Data Analytics Intern</div>
-            <div class="xp-org">· QualityKiosk Technologies</div>
-            <div class="xp-meta">Jun 2024 – Jul 2024 · Navi Mumbai</div>
-          </div>
-          <ul class="xp-list">
-            <li>Built a Data App that delivered <strong>21× ROI</strong> by reducing turnover costs and saving HR time.</li>
-            <li>Shipped dashboards for insight-driven decisions.</li>
-          </ul>
-          <div class="xp-tags">
-            <span class="tag">Streamlit</span><span class="tag">MySQL</span><span class="tag">Pandas</span><span class="tag">Altair</span><span class="tag">Argon2id</span>
-          </div>
-          <div class="xp-shot">
-            <img src="images/cert.jpg" alt="Internship certificate (thumb)">
-          </div>
+    <article class="xp">
+      <img class="xp-logo" src="images/tweet.jpg" alt="Tweetmailer logo" />
+      <div>
+        <div class="xp-h">
+          <div class="xp-role">Founder</div>
+          <div class="xp-org">· Tweetmailer (Marketing Agency)</div>
+          <div class="xp-meta">Feb 2023 – Mar 2024 · Mumbai</div>
         </div>
-      </article>
-
-      <article class="xp">
-        <img class="xp-logo" src="images/tweet.jpg" alt="Tweetmailer logo" />
-        <div>
-          <div class="xp-h">
-            <div class="xp-role">Founder</div>
-            <div class="xp-org">· Tweetmailer (Marketing Agency)</div>
-            <div class="xp-meta">Feb 2023 – Mar 2024 · Mumbai</div>
-          </div>
-          <ul class="xp-list">
-            <li>Scaled revenue for US/UK clients via Direct Response & Value-Based Marketing.</li>
-            <li>Built persuasive funnels, copy, and landing pages.</li>
-            <li>Prototyped GenAI customer-service bots.</li>
-          </ul>
-          <div class="xp-tags">
-            <span class="tag">Copywriting</span><span class="tag">CRO</span><span class="tag">Paid Media</span><span class="tag">GenAI</span>
-          </div>
-          <div class="xp-shot">
-            <img src="images/bot.jpg" alt="GenAI bot (thumb)">
-          </div>
+        <ul class="xp-list">
+          <li>Scaled revenue for US/UK clients via Direct Response & Value-Based Marketing.</li>
+          <li>Built persuasive funnels, copy, and landing pages.</li>
+          <li>Prototyped GenAI customer-service bots.</li>
+        </ul>
+        <div class="xp-tags">
+          <span class="tag">Copywriting</span><span class="tag">CRO</span><span class="tag">Paid Media</span><span class="tag">GenAI</span>
         </div>
-      </article>
-
-      <article class="xp">
-        <img class="xp-logo" src="images/glitch.jpg" alt="Glitch! eSports logo" />
-        <div>
-          <div class="xp-h">
-            <div class="xp-role">Head of Promotions</div>
-            <div class="xp-org">· Glitch! eSports Society</div>
-            <div class="xp-meta">Sep 2022 – Mar 2024 · Jaipur</div>
-          </div>
-          <ul class="xp-list">
-            <li>Planned campus events with <strong>over 1,000</strong> footfall; drove sponsorships & promotions.</li>
-          </ul>
-          <div class="xp-tags">
-            <span class="tag">Leadership</span><span class="tag">Email Marketing</span><span class="tag">Sponsorships</span><span class="tag">Event Ops</span>
-          </div>
-          <div class="xp-shot">
-            <img src="images/show.jpg" alt="Event photo (thumb)">
-          </div>
+        <div class="xp-shot">
+          <img src="images/bot.jpg" alt="GenAI bot (thumb)">
         </div>
-      </article>
-    </div>
-  </section>
+      </div>
+    </article>
 
-  <!-- PROJECTS -->
-  <section class="desk-window" id="projectsWin">
+    <article class="xp">
+      <img class="xp-logo" src="images/glitch.jpg" alt="Glitch! eSports logo" />
+      <div>
+        <div class="xp-h">
+          <div class="xp-role">Head of Promotions</div>
+          <div class="xp-org">· Glitch! eSports Society</div>
+          <div class="xp-meta">Sep 2022 – Mar 2024 · Jaipur</div>
+        </div>
+        <ul class="xp-list">
+          <li>Planned campus events with <strong>over 1,000</strong> footfall; drove sponsorships & promotions.</li>
+        </ul>
+        <div class="xp-tags">
+          <span class="tag">Leadership</span><span class="tag">Email Marketing</span><span class="tag">Sponsorships</span><span class="tag">Event Ops</span>
+        </div>
+        <div class="xp-shot">
+          <img src="images/show.jpg" alt="Event photo (thumb)">
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section class="desk-window" id="projectsWin">
   <div class="bar" data-drag>Projects<div class="close" data-close>[x]</div></div>
   <div class="body">
     <div class="proj-grid">
 
-      <!-- Smart Power Grid -->
       <article class="proj">
         <img src="images/dashboard.png" alt="Smart Power Grid Dashboard Screenshot">
         <div class="pbd">
           <h4>Smart Power Grid Monitoring & Optimization</h4>
-          <p>
-            IoT + ML system built with <strong>Raspberry Pi Pico W</strong>, <strong>LoRa</strong>, and <strong>MQTT</strong> 
-            for renewable microgrid monitoring and predictive load forecasting.
-          </p>
+          <p>IoT + ML system built with <strong>Raspberry Pi Pico W</strong>, <strong>LoRa</strong>, and <strong>MQTT</strong> for renewable microgrid monitoring and predictive load forecasting.</p>
           <ul class="xp-list" style="margin:8px 0 12px 18px;">
             <li>Real-time energy tracking with smart sensors</li>
             <li>Load forecasting via ANN, SVR, Genetic Algorithms</li>
@@ -427,22 +418,16 @@ body.dragging { cursor: move; }
         </div>
       </article>
 
-      <!-- Little Town -->
       <article class="proj">
         <img src="images/game.png" alt="Little Town pixel game screenshot">
         <div class="pbd">
           <h4>Little Town — GameMaker Studio 2</h4>
-          <p>
-            A cozy, pixel-art prototype exploring interactive storytelling and retro-style mechanics.
-          </p>
+          <p>A cozy, pixel-art prototype exploring interactive storytelling and retro-style mechanics.</p>
           <div class="p-tags">
-            <span class="tag">GameMaker Studio 2</span><span class="tag">Pixel Art</span>
-            <span class="tag">UI/UX</span>
+            <span class="tag">GameMaker Studio 2</span><span class="tag">Pixel Art</span><span class="tag">UI/UX</span>
           </div>
           <p style="margin-top:10px;">
-            <a class="icon-btn" href="https://gx.games/games/ceqjrl/little-town-modified-/tracks/1a4be7dc-fba7-4e4d-bee0-86713a02ef2c/" target="_blank" rel="noopener">
-              ▶ PLAY
-            </a>
+            <a class="icon-btn" href="https://gx.games/games/ceqjrl/little-town-modified-/tracks/1a4be7dc-fba7-4e4d-bee0-86713a02ef2c/" target="_blank" rel="noopener">▶ PLAY</a>
           </p>
         </div>
       </article>
@@ -451,70 +436,71 @@ body.dragging { cursor: move; }
   </div>
 </section>
 
-  <!-- CERTIFICATIONS -->
-  <section class="desk-window" id="certWin">
-    <div class="bar" data-drag>Certifications<div class="close" data-close>[x]</div></div>
-    <div class="body">
-      <div class="cert-list">
-        <article class="cert-card">
-          <div class="cert-head">
-            <img class="issuer-logo" src="images/morgan.png" alt="J.P. Morgan logo">
-            <div>
-              <strong>Investment Banking Job Simulation</strong><br>
-              <span class="cert-meta">J.P. Morgan — Aug 2024 · Forage</span>
-            </div>
+<!-- CERTIFICATIONS -->
+<section class="desk-window" id="certWin">
+  <div class="bar" data-drag>Certifications<div class="close" data-close>[x]</div></div>
+  <div class="body">
+    <div class="cert-list">
+      <article class="cert-card">
+        <div class="cert-head">
+          <img class="issuer-logo" src="images/morgan.png" alt="J.P. Morgan logo">
+          <div>
+            <strong>Investment Banking Job Simulation</strong><br>
+            <span class="cert-meta">J.P. Morgan — Aug 2024 · Forage</span>
           </div>
-          <ul class="xp-list">
-            <li>Identified M&A target, built DCF, produced a crisp 2-page client brief.</li>
-          </ul>
-          <div class="cert-shot">
-            <img src="images/morganc.png" alt="Investment Banking certificate">
-          </div>
-        </article>
+        </div>
+        <ul class="xp-list">
+          <li>Identified M&A target, built DCF, produced a crisp 2-page client brief.</li>
+        </ul>
+        <div class="cert-shot">
+          <img src="images/morganc.png" alt="Investment Banking certificate">
+        </div>
+      </article>
 
-        <article class="cert-card">
-          <div class="cert-head">
-            <img class="issuer-logo" src="images/stanford.png" alt="DeepLearning.AI logo">
-            <div>
-              <strong>Improving Deep Neural Networks</strong><br>
-              <span class="cert-meta">DeepLearning.AI — Apr 2025</span>
-            </div>
+      <article class="cert-card">
+        <div class="cert-head">
+          <img class="issuer-logo" src="images/stanford.png" alt="DeepLearning.AI logo">
+          <div>
+            <strong>Improving Deep Neural Networks</strong><br>
+            <span class="cert-meta">DeepLearning.AI — Apr 2025</span>
           </div>
-          <ul class="xp-list">
-            <li>Regularization, hyperparameter search, and training-loop ergonomics.</li>
-          </ul>
-          <div class="cert-shot">
-            <img src="images/stanfordc.png" alt="DeepLearning.AI certificate">
-          </div>
-        </article>
-      </div>
+        </div>
+        <ul class="xp-list">
+          <li>Regularization, hyperparameter search, and training-loop ergonomics.</li>
+        </ul>
+        <div class="cert-shot">
+          <img src="images/stanfordc.png" alt="DeepLearning.AI certificate">
+        </div>
+      </article>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- SPRINGER -->
-  <section class="desk-window" id="springerWin">
-    <div class="bar" data-drag>Springer Research<div class="close" data-close>[x]</div></div>
-    <div class="body">
-      <h3 style="margin-top:0">Soon available on Springer 📚</h3>
-      <div class="chip-row">
-        <span class="chip">LNNS</span><span class="chip">Scopus Indexed</span><span class="chip">Research</span>
-      </div>
+<!-- SPRINGER -->
+<section class="desk-window" id="springerWin">
+  <div class="bar" data-drag>Springer Research<div class="close" data-close>[x]</div></div>
+  <div class="body">
+    <h3 style="margin-top:0">Soon available on Springer 📚</h3>
+    <div class="chip-row">
+      <span class="chip">LNNS</span><span class="chip">Scopus Indexed</span><span class="chip">Research</span>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CONTACT -->
-  <section class="desk-window" id="contactWin">
+<!-- CONTACT -->
+<section class="desk-window" id="contactWin">
   <div class="bar" data-drag>Contact<div class="close" data-close>[x]</div></div>
   <div class="body">
 
     <!-- Hero image -->
     <div style="margin-bottom:14px;">
-      <img src="images/contact.png" alt="Contact banner" style="width:25%; height:auto; border-radius:14px; border:1px solid var(--card-bd); display:block;">
+      <img class="avatar" src="images/contact.png" alt="Contact banner" style="width:25%; height:auto; border-radius:14px; border:1px solid var(--card-bd); display:block;">
     </div>
 
     <h3 style="margin:0 0 10px; font-size:24px;">Let’s build something 💪🏼</h3>
     <p style="margin:0 0 18px; color:var(--muted);">
-      I’m open to internships, freelance work, and collaborations around Machine Learning, IoT Projects, Hackathons and Business Case Competitions. The fastest way to reach me is LinkedIn.
+      I’m open to internships, freelance work, and collaborations around Machine Learning, IoT Projects, Hackathons and Business Case Competitions.  
+      The fastest way to reach me is LinkedIn.
     </p>
 
     <!-- Availability / focus areas -->
@@ -525,42 +511,23 @@ body.dragging { cursor: move; }
       <span class="chip">Finance</span>
     </div>
 
-    <!-- Primary actions (inline SVG icons) -->
+    <!-- Primary actions -->
     <div class="cert-card" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
       <a class="icon-btn" style="padding:10px 16px;" href="mailto:hoshangchakravarty@icloud.com">
-        <!-- Mail icon -->
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
-          <path fill="currentColor" d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 2v.01L12 13 4 6.01V6zM4 18V8l8 7 8-7v10z"/>
-        </svg>
-        <span>&nbsp;Email</span>
+        📧 Email
       </a>
-
       <a class="icon-btn" style="padding:10px 16px;" href="https://www.linkedin.com/in/hoshangc/" target="_blank" rel="noopener">
-        <!-- LinkedIn logo -->
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
-          <path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.22 8.98H4.7V24H.22zM8.54 8.98h4.28v2.05h.06c.6-1.14 2.07-2.35 4.27-2.35c4.56 0 5.4 3 5.4 6.9V24h-4.48v-6.63c0-1.58-.03-3.6-2.2-3.6c-2.2 0-2.53 1.72-2.53 3.49V24H8.54z"/>
-        </svg>
-        <span>&nbsp;LinkedIn</span>
+        🔗 LinkedIn
       </a>
-
       <a class="icon-btn" style="padding:10px 16px;" href="https://github.com/hoshangchakravarty/" target="_blank" rel="noopener">
-        <!-- GitHub logo -->
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
-          <path fill="currentColor" d="M12 .5A11.5 11.5 0 0 0 .5 12c0 5.08 3.29 9.39 7.86 10.9c.58.11.79-.25.79-.56c0-.28-.01-1.02-.02-2c-3.2.7-3.88-1.54-3.88-1.54c-.53-1.36-1.3-1.72-1.3-1.72c-1.06-.73.08-.72.08-.72c1.17.08 1.79 1.2 1.79 1.2c1.04 1.79 2.74 1.28 3.41.98c.11-.75.41-1.28.75-1.57c-2.55-.29-5.23-1.28-5.23-5.69c0-1.26.45-2.29 1.19-3.1c-.12-.29-.52-1.46.11-3.04c0 0 .97-.31 3.18 1.18c.92-.26 1.9-.38 2.88-.38s1.96.13 2.88.38c2.21-1.49 3.18-1.18 3.18-1.18c.63 1.58.23 2.75.11 3.04c.74.81 1.19 1.84 1.19 3.1c0 4.42-2.68 5.4-5.24 5.68c.42.36.8 1.08.8 2.18c0 1.57-.02 2.83-.02 3.21c0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12A11.5 11.5 0 0 0 12 .5z"/>
-        </svg>
-        <span>&nbsp;GitHub</span>
+        💻 GitHub
       </a>
-
       <a class="icon-btn" style="padding:10px 16px;" href="files/resume.pdf" target="_blank" rel="noopener">
-        <!-- Resume/doc icon -->
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="flex:0 0 auto">
-          <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16c0 1.11.89 2 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8v2H8m0 3h8v2H8m0-9h8v2H8"/>
-        </svg>
-        <span>&nbsp;Resume</span>
+        📄 Resume
       </a>
     </div>
 
-    <!-- Context you like to receive -->
+    <!-- What to include -->
     <div class="cert-card" style="margin-top:14px;">
       <strong style="display:block; margin-bottom:8px;">What to include (helps me respond fast):</strong>
       <ul class="xp-list" style="margin:0 0 0 18px;">
@@ -570,7 +537,7 @@ body.dragging { cursor: move; }
       </ul>
     </div>
 
-    <!-- Quick facts / meta -->
+    <!-- Quick facts -->
     <div class="cert-card" style="margin-top:14px;">
       <div style="font-weight:800; margin-bottom:6px;">Quick facts</div>
       <ul class="xp-list" style="margin:0 0 0 18px;">
@@ -582,163 +549,78 @@ body.dragging { cursor: move; }
 
   </div>
 </section>
-
 <script>
-/* ===== Themes (dynamic accents + assets) ===== */
-const themes={
-  default:{accent:'#c8a96b', bg:'#ffffff',       video:['images/default.mp4'],  audio:['sounds/default.mp3'], tint:'light'},
-  liyue  :{accent:'#d7a22a', bg:'#0b1f2a',       video:['images/liyue.mp4'],    audio:['sounds/rex.mp3'],     tint:'dark'},
-  childe :{accent:'#0b63c9', bg:'#061a2e',       video:['images/childe.mp4'],   audio:['sounds/childe.mp3'],  tint:'dark'},
-  inazuma:{accent:'#7a3ef0', bg:'#f7f6ff',       video:['images/inazuma.mp4'],  audio:['sounds/inazuma.mp3'], tint:'light'}
-};
-/* ===== Preload Manager (in-memory + progressive loader) ===== */
-const preload = {
-  blobs: new Map(), // path -> objectURL
-  progress: 0, total: 0,
-};
+/* ===============================
+   SIMPLE BOOT: loader until onload OR 5s (whichever first)
+   =============================== */
+(() => {
+  const loader = document.getElementById('loader');
+  const loadbar = document.getElementById('loadbar');
+  const MAX_MS = 5000;
 
-function fetchAsBlob(path){
-  return fetch(path, { cache: 'force-cache' })
-    .then(r => { if (!r.ok) throw new Error('HTTP '+r.status); return r.blob(); })
-    .then(b => {
-      const url = URL.createObjectURL(b);
-      preload.blobs.set(path, url);
-      preload.progress++;
-      const bar = document.getElementById('loadbar');
-      if (bar && preload.total) {
-        bar.style.width = Math.round(100 * preload.progress / preload.total) + '%';
-      }
-      return url;
-    })
-    .catch(()=> null);
-}
+  // Fake progress: ease to 90% over 4.5s, then 100% at finish
+  let start = performance.now();
+  let done = false;
+  function tick(t){
+    if (done) return;
+    const k = Math.min(1, (t - start) / (MAX_MS * 0.9));
+    if (loadbar) loadbar.style.width = (k * 90).toFixed(0) + '%';
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 
-async function warmAllThemeMedia(){
-  const paths = [];
-  Object.values(themes).forEach(t => {
-    (t.video||[]).forEach(p => paths.push(p));
-    (t.audio||[]).forEach(p => paths.push(p));
-  });
-  preload.total = paths.length;
-
-  const prioritized = [
-    ...(themes.default.video||[]),
-    ...(themes.default.audio||[]),
-    ...paths.filter(p => !((themes.default.video||[]).includes(p) || (themes.default.audio||[]).includes(p)))
-  ];
-  await Promise.all(prioritized.map(fetchAsBlob));
-}
-
-/* ===== WebAudio unlock + SFX ===== */
-let AC=null, sfx={ click:null }, audioUnlocked=false;
-
-function getAC(){ if(!AC){ AC=new (window.AudioContext||window.webkitAudioContext)(); } return AC; }
-
-async function loadSfx(){
-  try{
-    const ab = await fetch('sounds/click.mp3', {cache:'force-cache'}).then(r=>r.arrayBuffer());
-    sfx.click = await getAC().decodeAudioData(ab);
-  }catch(_){}
-}
-
-function playClickSfx(){
-  if(!AC || AC.state!=='running' || !sfx.click) return;
-  const src = AC.createBufferSource();
-  src.buffer = sfx.click;
-  const g = AC.createGain(); g.gain.value = 0.45;
-  src.connect(g).connect(AC.destination);
-  src.start(0);
-}
-
-function unlockAudioAndStartTheme(){
-  getAC();
-  AC.resume().catch(()=>{});
-  audioUnlocked = true;
-  sessionStorage.setItem('audioUnlocked','1');
-
-  if(!audioEl){
-    const t = themes[currentTheme];
-    if(t?.audio){
-      const src = preload.blobs.get(t.audio[0]) || t.audio[0];
-      audioEl = makeAudio(src, audioPos[currentTheme]||0, parseFloat(vol.value||'0.6'));
+  function finishLoader(){
+    if (done) return;
+    done = true;
+    if (loadbar) loadbar.style.width = '100%';
+    if (loader){
+      loader.style.opacity = '0';
+      setTimeout(() => loader.remove?.(), 350);
     }
   }
-}
 
-/* bind early—first gesture unlocks */
-['pointerdown','keydown','touchstart'].forEach(ev=>{
-  document.addEventListener(ev, ()=>unlockAudioAndStartTheme(), {once:true, capture:true});
-});
+  window.addEventListener('load', finishLoader, {once:true});
+  setTimeout(finishLoader, MAX_MS);
+})();
 
-/* warm SFX right away */
-loadSfx();
+/* ===============================
+   THEME + BG VIDEO + AUDIO
+   =============================== */
+const themes = {
+  default : { accent:'#c8a96b', bg:'#ffffff',       tint:'light', video:'images/default.mp4',  audio:'sounds/default.mp3' },
+  liyue   : { accent:'#d7a22a', bg:'#0b1f2a',       tint:'dark',  video:'images/liyue.mp4',    audio:'sounds/rex.mp3'     },
+  childe  : { accent:'#0b63c9', bg:'#061a2e',       tint:'dark',  video:'images/childe.mp4',   audio:'sounds/childe.mp3'  },
+  inazuma : { accent:'#7a3ef0', bg:'#f7f6ff',       tint:'light', video:'images/inazuma.mp4',  audio:'sounds/inazuma.mp3' }
+};
+let currentTheme = 'default';
 
-const root=document.documentElement, fade=document.getElementById('themeFade');
-const vA=document.getElementById('bgVideoA'), vB=document.getElementById('bgVideoB');
-[vA,vB].forEach(v=>{ v.muted=true; v.setAttribute('muted',''); }); // ensure muted
+const root = document.documentElement;
+const metaTheme = document.getElementById('themeColor');
 
-const vol=document.getElementById('volume');
+const vA = document.getElementById('bgVideoA');
+const vB = document.getElementById('bgVideoB');
+[vA, vB].forEach(v => { v.muted = true; v.setAttribute('muted',''); v.loop = true; });
 
-let currentTheme='default', audioEl=null, audioPos={}, activeVid='A';
-
-/* Seamless video loop */
-[vA,vB].forEach(v=>{
-  v.loop=false;
-  v.addEventListener('timeupdate', ()=>{
-    if(v.duration && v.currentTime >= v.duration-0.05){ v.currentTime=0; v.play().catch(()=>{}); }
-  });
-});
-
-/* Video crossfade */
-function playVideoCrossfade(srcPath){
-  const src = preload.blobs.get(srcPath) || srcPath;
-  const from = activeVid==='A' ? vA : vB;
-  const to   = activeVid==='A' ? vB : vA;
+let activeVid = 'A';
+function swapVideo(src){
+  const from = activeVid === 'A' ? vA : vB;
+  const to   = activeVid === 'A' ? vB : vA;
 
   if (to.src !== src) to.src = src;
   to.currentTime = 0;
-
-  const go = () => {
-    to.play().catch(()=>{});
-    to.style.opacity = '1';
-    from.style.opacity = '0';
-    activeVid = (activeVid==='A' ? 'B' : 'A');
-  };
-
-  if (to.readyState >= 3) go();          // HAVE_FUTURE_DATA
-  else to.addEventListener('canplay', go, {once:true});
+  to.play().catch(()=>{});
+  to.style.opacity = '1';
+  from.style.opacity = '0';
+  activeVid = activeVid === 'A' ? 'B' : 'A';
 }
 
-function crossfadeToThemeAudio(name, spec, volTarget){
-  const old = audioEl;
-  if (old){ audioPos[currentTheme] = old.currentTime||0; fadeAudio(old,0,500,()=>old.pause()); }
+/* Accent + tint swap */
+function applyThemeTokens(spec){
+  root.style.setProperty('--accent', spec.accent);
+  root.style.setProperty('--bg', spec.bg);
 
-  const srcPath = spec.audio?.[0];
-  if (!srcPath){ audioEl = null; return; }
-
-  const src = preload.blobs.get(srcPath) || srcPath;
-  audioEl = makeAudio(src, audioPos[name]||0, volTarget);
-}
-function hideVideos(){ vA.style.opacity='0'; vB.style.opacity='0'; }
-
-/* Audio crossfade */
-function fadeAudio(el,to=0,ms=600,done=()=>{}){ if(!el){done();return;}
-  const from=el.volume, start=performance.now();
-  const step=t=>{ const k=Math.min(1,(t-start)/ms); el.volume=from+(to-from)*k; if(k<1) requestAnimationFrame(step); else{ el.volume=to; done(); } };
-  requestAnimationFrame(step);
-}
-function makeAudio(src,start=0,base=0.6){
-  const a=new Audio(src); a.loop=true; a.volume=0; a.currentTime=start||0;
-  const go=()=>{ a.play().catch(()=>{}); fadeAudio(a,base,800); };
-  a.addEventListener('canplaythrough',go,{once:true}); setTimeout(go,500); return a;
-}
-
-
-/* Apply theme, swap glass tokens for readability */
-function applyTheme(name){
-  const t=themes[name]||themes.default;
-
-  if(t.tint === 'dark'){
+  // swap glass tokens for readability
+  if (spec.tint === 'dark'){
     root.style.setProperty('--ink','#ffffff');
     root.style.setProperty('--muted','#cfcfcf');
     root.style.setProperty('--win-tint','rgba(6,10,18,.34)');
@@ -754,42 +636,233 @@ function applyTheme(name){
     root.style.setProperty('--chip-bg','rgba(255,255,255,.65)');
   }
 
-  fade.style.background=t.bg; fade.style.opacity='1';
-  setTimeout(()=>{ root.style.setProperty('--accent',t.accent); fade.style.opacity='0'; },150);
-
-  if(t.video) playVideoCrossfade(t.video[0]); else hideVideos();
-  if(t.audio) crossfadeToThemeAudio(name,t,parseFloat(vol.value||'0.6')); else if(audioEl){ fadeAudio(audioEl,0,400,()=>audioEl.pause()); audioEl=null; }
-
-  currentTheme=name;
-  document.querySelectorAll('.disc').forEach(d=>d.classList.toggle('is-active', d.dataset.theme===name));
+  if (metaTheme) metaTheme.setAttribute('content', spec.bg);
 }
 
-/* Disc controls */
-let themeLock = false;
-document.querySelectorAll('.disc[data-theme]').forEach(b=>b.addEventListener('click', async ()=>{
-  if (themeLock) return;
-  themeLock = true;
-  try {
-    applyTheme(b.dataset.theme);
-  } finally {
-    setTimeout(()=>themeLock=false, 250); // debounce ~1/4s
+/* ===============================
+   AUDIO: single <audio>, play/pause button, volume, theme-sync
+   =============================== */
+let audioEl = null;
+let isPlaying = false;
+const vol = document.getElementById('volume');
+
+function ensureAudio(){
+  if (!audioEl){
+    audioEl = new Audio();
+    audioEl.loop = true;
+    audioEl.preload = 'metadata';
+    audioEl.volume = parseFloat(vol?.value || '0.6');
   }
-}));
-document.getElementById('discToggle').addEventListener('click',()=>{
-  if(!audioEl){ const t=themes[currentTheme]; if(t&&t.audio){ audioEl=makeAudio(t.audio[0], audioPos[currentTheme]||0, parseFloat(vol.value||'0.6')); } return; }
-  if(audioEl.paused){ audioEl.play().catch(()=>{}); fadeAudio(audioEl, parseFloat(vol.value||'0.6'), 600); }
-  else{ audioPos[currentTheme]=audioEl.currentTime||0; fadeAudio(audioEl,0,450,()=>audioEl.pause()); }
+  return audioEl;
+}
+function setAudioSource(src, keepTime=false){
+  const a = ensureAudio();
+  const t = keepTime ? a.currentTime : 0;
+  const wasPlaying = isPlaying;
+  a.pause();
+  a.src = src;
+  a.currentTime = t || 0;
+  if (wasPlaying){
+    a.play().then(()=>{ isPlaying = true; updateDiscToggleUI(); }).catch(()=>{ isPlaying = false; updateDiscToggleUI(); });
+  }else{
+    isPlaying = false;
+    updateDiscToggleUI();
+  }
+}
+if (vol){
+  vol.addEventListener('input', () => { if (audioEl) audioEl.volume = parseFloat(vol.value); });
+}
+
+/* Pause/Play button UI sync */
+const discToggle = document.getElementById('discToggle');
+const discIcon   = document.getElementById('discIcon');
+const discLabel  = document.getElementById('discLabel');
+
+function updateDiscToggleUI(){
+  if (!discIcon || !discLabel) return;
+  if (isPlaying){
+    discIcon.textContent  = '⏸️';
+    discLabel.textContent = 'PAUSE';
+  } else {
+    discIcon.textContent  = '▶️';
+    discLabel.textContent = 'PLAY';
+  }
+}
+
+/* Nudge tooltip toward the pause/play button */
+const audioNudge = document.getElementById('audioNudge');
+let nudgeTimer = null;
+function showAudioNudgeFor5s(){
+  if (!audioNudge || !discToggle) return;
+  positionTipAtButton(audioNudge, discToggle);
+  audioNudge.classList.remove('hidden');
+  requestAnimationFrame(() => audioNudge.classList.add('show'));
+  clearTimeout(nudgeTimer);
+  nudgeTimer = setTimeout(hideAudioNudge, 5000);
+}
+function hideAudioNudge(){
+  if (!audioNudge) return;
+  audioNudge.classList.remove('show');
+  setTimeout(()=> audioNudge.classList.add('hidden'), 180);
+}
+function positionTipAtButton(tipEl, btnEl){
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const r  = btnEl.getBoundingClientRect();
+  const tip = tipEl.getBoundingClientRect();
+  // Choose side with most free space
+  const spaces = [
+    {side:'top',    space:r.top},
+    {side:'bottom', space:vh - r.bottom},
+    {side:'left',   space:r.left},
+    {side:'right',  space:vw - r.right}
+  ].sort((a,b)=>b.space-a.space);
+
+  // reset arrow classes
+  tipEl.classList.remove('tip-top','tip-bottom','tip-left','tip-right');
+
+  const pad = 10; // gap between tip and button
+  let x=0, y=0;
+
+  if (spaces[0].side === 'top'){
+    tipEl.classList.add('tip-top');
+    x = Math.min(vw - tip.width - 8, Math.max(8, r.left + (r.width - tip.width)/2));
+    y = r.top - tip.height - pad;
+    tipEl.style.setProperty('--ax', ((Math.min(Math.max(r.left + r.width/2 - x, 12), tip.width-12)) / tip.width * 100) + '%');
+  } else if (spaces[0].side === 'bottom'){
+    tipEl.classList.add('tip-bottom');
+    x = Math.min(vw - tip.width - 8, Math.max(8, r.left + (r.width - tip.width)/2));
+    y = r.bottom + pad;
+    tipEl.style.setProperty('--ax', ((Math.min(Math.max(r.left + r.width/2 - x, 12), tip.width-12)) / tip.width * 100) + '%');
+  } else if (spaces[0].side === 'left'){
+    tipEl.classList.add('tip-left');
+    x = r.left - tip.width - pad;
+    y = Math.min(vh - tip.height - 8, Math.max(8, r.top + (r.height - tip.height)/2));
+    tipEl.style.setProperty('--ay', ((Math.min(Math.max(r.top + r.height/2 - y, 12), tip.height-12)) / tip.height * 100) + '%');
+  } else {
+    tipEl.classList.add('tip-right');
+    x = r.right + pad;
+    y = Math.min(vh - tip.height - 8, Math.max(8, r.top + (r.height - tip.height)/2));
+    tipEl.style.setProperty('--ay', ((Math.min(Math.max(r.top + r.height/2 - y, 12), tip.height-12)) / tip.height * 100) + '%');
+  }
+
+  tipEl.style.left = Math.round(x) + 'px';
+  tipEl.style.top  = Math.round(y) + 'px';
+}
+
+/* Button behavior */
+if (discToggle){
+  discToggle.addEventListener('click', () => {
+    const a = ensureAudio();
+    if (isPlaying){
+      a.pause();
+      isPlaying = false;
+      updateDiscToggleUI();
+    } else {
+      a.play().then(()=>{ isPlaying = true; updateDiscToggleUI(); hideAudioNudge(); })
+               .catch(()=>{ isPlaying = false; updateDiscToggleUI(); });
+    }
+  });
+}
+
+/* ===============================
+   CLICK SFX (WebAudio)
+   =============================== */
+let AC = null, sfx = { click:null };
+function getAC(){ if (!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function loadClick(){
+  fetch('sounds/click.mp3').then(r => r.arrayBuffer()).then(buf => {
+    getAC().decodeAudioData(buf, (decoded)=>{ sfx.click = decoded; });
+  }).catch(()=>{});
+}
+function playClickSfx(){
+  if (!AC || AC.state !== 'running' || !sfx.click) return;
+  const src = AC.createBufferSource();
+  src.buffer = sfx.click;
+  const g = AC.createGain(); g.gain.value = 0.45;
+  src.connect(g).connect(AC.destination);
+  src.start(0);
+}
+// First user gesture unlocks AudioContext & loads SFX
+['pointerdown','keydown','touchstart'].forEach(ev=>{
+  document.addEventListener(ev, ()=>{
+    const ctx = getAC();
+    ctx.resume().catch(()=>{});
+    loadClick();
+  }, {once:true, capture:true});
 });
-
-/* Volume: native look, just control gain */
-vol.addEventListener('input',()=>{ if(audioEl) audioEl.volume=parseFloat(vol.value); });
-
-/* Click SFX */
-/* Click SFX (WebAudio) */
+// Play SFX on UI-clicks only
 document.addEventListener('click', e=>{
-  if(e.target.closest('a,button,.icon-btn,.disc,[data-close]')) playClickSfx();
+  if (e.target.closest('a,button,.icon-btn,.disc,[data-close]')) playClickSfx();
 });
-/* Windows: open/close + drag */
+
+/* ===============================
+   THEME SWITCHING (buttons)
+   =============================== */
+function applyTheme(name, options={ fromUser:false }){
+  const spec = themes[name] || themes.default;
+  currentTheme = name;
+
+  // Tokens + status bar color
+  applyThemeTokens(spec);
+
+  // Background video (simple crossfade)
+  if (spec.video){
+    const src = spec.video;
+    swapVideo(src);
+  }
+
+  // Music reflect accurately: 
+  // - If currently playing, switch track and keep playing.
+  // - If paused, switch track but remain paused (button shows ▶️ PLAY).
+  if (spec.audio){
+    setAudioSource(spec.audio, /*keepTime*/false);
+  }
+
+  // Button active state
+  document.querySelectorAll('.disc[data-theme]').forEach(d=>{
+    d.classList.toggle('is-active', d.dataset.theme === name);
+  });
+
+  // If user initiated the theme change and music is paused, keep it paused (no surprise autoplay).
+  // If it was playing, it will continue (handled inside setAudioSource).
+}
+document.querySelectorAll('.disc[data-theme]').forEach(b => {
+  b.addEventListener('click', ()=> applyTheme(b.dataset.theme, {fromUser:true}));
+});
+
+/* ===============================
+   INITIALIZE: default theme + decide if we show audio nudge
+   =============================== */
+window.addEventListener('DOMContentLoaded', () => {
+  // Start with default visuals
+  applyTheme('default');
+
+  // Try to start bg video A immediately (won't block UI if it fails)
+  vA.src = themes.default.video;
+  vA.play().catch(()=>{});
+
+  // Set up audio element with default theme source, but DO NOT autoplay.
+  setAudioSource(themes.default.audio, false); // this will not play because isPlaying is false
+
+  // Music is off by default → show a tip pointing to the button (5s) after layout settles
+  setTimeout(()=>{
+    updateDiscToggleUI();
+    // Only show the nudge if not already playing (e.g., some browsers might allow it)
+    if (!isPlaying) showAudioNudgeFor5s();
+  }, 300);
+
+  // Reposition tip on resize/orientation changes
+  ['resize','orientationchange'].forEach(ev => {
+    window.addEventListener(ev, ()=>{
+      if (!audioNudge || audioNudge.classList.contains('hidden')) return;
+      positionTipAtButton(audioNudge, discToggle);
+    });
+  });
+});
+
+/* ===============================
+   WINDOWS: open/close + drag (desktop only)
+   =============================== */
 const OPENERS = document.querySelectorAll('[data-open]');
 const MODALS  = document.querySelectorAll('.desk-window');
 let z = 10;
@@ -799,8 +872,8 @@ function isMobile(){ return window.matchMedia('(max-width:900px)').matches; }
 OPENERS.forEach(b => b.addEventListener('click', () => {
   const win = document.querySelector(b.getAttribute('data-open')); if(!win) return;
 
-  // On mobile: clear inline positions so CSS fullscreen wins
   if (isMobile()){
+    // Let CSS fullscreen sheet handle layout
     ['left','top','right','bottom','width','height','transform'].forEach(k => win.style[k] = '');
   }
 
@@ -826,18 +899,18 @@ MODALS.forEach(win=>{
   let sx=0,sy=0,drag=false;
 
   const down = e => {
-  if (isMobile()) return; // disable dragging on mobile
-  drag = true;
-  document.body.classList.add('dragging');   // NEW
-  const r = win.getBoundingClientRect();
-  const p = e.touches ? e.touches[0] : e;
-  sx = p.clientX - r.left; 
-  sy = p.clientY - r.top;
-  document.addEventListener('mousemove', move);
-  document.addEventListener('mouseup', up);
-  document.addEventListener('touchmove', move, { passive: false });
-  document.addEventListener('touchend', up);
-};
+    if (isMobile()) return; // disable dragging on mobile
+    drag = true;
+    document.body.classList.add('dragging');
+    const r = win.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    sx = p.clientX - r.left; 
+    sy = p.clientY - r.top;
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    document.addEventListener('touchmove', move, { passive: false });
+    document.addEventListener('touchend', up);
+  };
   const move=e=>{
     if(!drag) return; e.preventDefault?.(); const p=e.touches?e.touches[0]:e;
     let x=p.clientX-sx,y=p.clientY-sy;
@@ -845,121 +918,23 @@ MODALS.forEach(win=>{
     win.style.left=Math.max(8,Math.min(maxX,x))+'px';
     win.style.top =Math.max(8,Math.min(maxY,y))+'px';
   };
-const up = () => {
-  drag = false;
-  document.body.classList.remove('dragging'); // NEW
-  document.removeEventListener('mousemove', move);
-  document.removeEventListener('mouseup', up);
-  document.removeEventListener('touchmove', move);
-  document.removeEventListener('touchend', up);
-};
+  const up = () => {
+    drag = false;
+    document.body.classList.remove('dragging');
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', up);
+  };
 
   bar.addEventListener('mousedown',down);
   bar.addEventListener('touchstart',down,{passive:true});
 });
 
-/* ===== Loader + first boot with tab-level memory ===== */
-const loader = document.getElementById('loader');
-const tapHint = document.getElementById('tapHint');
-
-async function setVideoSrcWithBlob(videoEl, path){
-  const blobUrl = preload.blobs.get(path) || path;
-  if (videoEl.src !== blobUrl) videoEl.src = blobUrl;
-}
-
-const BOOT_MAX_MS = 6000; // hard stop so loader never sticks
-
-function finishBoot(){
-  // hide loader quickly if it's still present
-  if (loader) {
-    loader.style.opacity = '0';
-    setTimeout(()=>loader.remove?.(), 350);
-  }
-  // bring up visuals
-  applyTheme('default');
-}
-
-async function firstBoot(){
-  // start preloads (non-blocking) + SFX decode
-  warmAllThemeMedia().catch(()=>{});
-  loadSfx().catch(()=>{});
-
-  const defVid = themes.default.video?.[0] || null;
-  if (defVid) {
-    await setVideoSrcWithBlob(vA, defVid);
-    vA.load();
-  } else {
-    // no default video configured → just finish
-    finishBoot();
-    return;
-  }
-
-  // resolve on ANY early-playable signal OR on network weirdness OR timeout
-  const readySignal = new Promise(res=>{
-    const ok = ()=>res();
-    const failish = ()=>res(); // even on 'stalled'/'error', we proceed
-
-    vA.addEventListener('loadeddata', ok, {once:true});
-    vA.addEventListener('canplay', ok, {once:true});
-    vA.addEventListener('canplaythrough', ok, {once:true});
-
-    // if Safari stalls/suspends or errors, don't block boot
-    vA.addEventListener('stalled', failish, {once:true});
-    vA.addEventListener('suspend', failish, {once:true});
-    vA.addEventListener('error', failish, {once:true});
-  });
-
-  const hardTimeout = new Promise(res => setTimeout(res, BOOT_MAX_MS));
-  await Promise.race([readySignal, hardTimeout]);
-
-  // try show background (muted autoplay OK; if it fails we still continue)
-  vA.style.opacity = '1';
-  try { await vA.play(); } catch(_) {}
-
-  // Same-tab refresh: auto-resume audio if previously unlocked
-  try {
-    if (sessionStorage.getItem('audioUnlocked') === '1'){
-      const ACx = getAC();
-      await ACx.resume();
-      const t = themes[currentTheme];
-      if (t?.audio && !audioEl) {
-        const src = preload.blobs.get(t.audio[0]) || t.audio[0];
-        audioEl = makeAudio(src, audioPos[currentTheme]||0, parseFloat(vol.value||'0.6'));
-      }
-    } else {
-      // show hint only on platforms that block audio autoplay
-      const blocks = /Mobi|Android|iPhone|iPad|Safari/i.test(navigator.userAgent);
-      if (blocks && tapHint) tapHint.style.display = 'block';
-
-      // first gesture unlocks audio & stores flag for this tab
-      const unlock = async () => {
-        const ACx = getAC();
-        await ACx.resume().catch(()=>{});
-        sessionStorage.setItem('audioUnlocked','1');
-        if (!audioEl) {
-          const t = themes[currentTheme];
-          if (t?.audio) {
-            const src = preload.blobs.get(t.audio[0]) || t.audio[0];
-            audioEl = makeAudio(src, audioPos[currentTheme]||0, parseFloat(vol.value||'0.6'));
-          }
-        }
-        document.removeEventListener('pointerdown', unlock, true);
-        document.removeEventListener('keydown', unlock, true);
-        document.removeEventListener('touchstart', unlock, true);
-      };
-      ['pointerdown','keydown','touchstart'].forEach(ev=>{
-        document.addEventListener(ev, unlock, {once:true, capture:true});
-      });
-    }
-  } catch(_) {}
-
-  // finish boot even if any of the above had issues
-  finishBoot();
-}
-firstBoot();
-
-/* Live toolbar height → keeps welcome card clear even if toolbar wraps or button state changes */
-const toolbar=document.getElementById('toolbar');
+/* ===============================
+   LIVE toolbar height -> CSS var for spacing on mobile
+   =============================== */
+const toolbar = document.getElementById('toolbar');
 function setToolbarH(){
   const h = toolbar?.getBoundingClientRect().height || 68;
   root.style.setProperty('--toolbar-h', `${Math.ceil(h)}px`);
@@ -967,12 +942,6 @@ function setToolbarH(){
 setToolbarH();
 window.addEventListener('resize', setToolbarH);
 window.addEventListener('orientationchange', setToolbarH);
-if (document.fonts && document.fonts.ready) { document.fonts.ready.then(setToolbarH); }
-new ResizeObserver(setToolbarH).observe(toolbar);
-/* ---- SW register (cache theme assets for near-instant switches) ---- */
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(()=>{});
-}
 </script>
 </body>
 </html>
